@@ -1,15 +1,40 @@
+% this class defines the system parameters
+
 classdef Platform
    properties
-      numAgents;
-      fundPrice;
-      buyFunc;
-      sellFunc;
+      buyFunc function_handle;
+      sellFunc function_handle;
       
    end
 
    methods
-       function mint(tokenID, buy_func, s0, deltaS)
-            deltaR = integral(buy_func, s0, s0+deltaS)
+        function obj = Platform(buyFunc)
+            if nargin > 0
+                obj.myFunction = func;
+            else
+                obj.myFunction = @(x) x^2; % Default function if not provided
+            end
+        end
+
+%          this function takes the number of tokens that the agent wants to buy, 
+%          computes the total price to be paid, and updates the current supply
+       function mint(liquidity, buyFunc, currentSupply, deltaS)
+%            buyFunc = @(s) buyFunc
+            deltaR = integral(buyFunc, currentSupply, currentSupply+deltaS)
+            if liquidity >= deltaR
+                currentSupply = currentSupply + deltaS;
+            else
+                print("Insufficient liquidity..")
+            end
+         end
+
+         function burn(sellFunc, currentSupply, deltaS)
+            deltaR = integral(sellFunc, currentSupply, currentSupply-deltaS)
+            if liquidity >= deltaR
+                currentSupply = currentSupply - deltaS;
+            else
+                print("Insufficient liquidity..")
+            end
          end
 
    end

@@ -2,17 +2,22 @@
 
 classdef Token
    properties
-      tokenID;
-      fundPrice;
-      currentPrice;
-      currentSupply;
-      currentReserve;
+      tokenID int64;
+      currentPrice double;
+      currentSupply int64;
+      currentReserve double;
    end
 
-%    methods
-%        function mint(tokenID, buy_func, s0, deltaS)
-%             deltaR = integral(buy_func, s0, s0+deltaS)
-%          end
-% 
-%    end
+   methods
+       function obj = Token(tokenID, currentPrice, currentSupply,currentReserve)
+            if nargin > 0
+                obj.tokenID = tokenID;
+                obj.currentPrice = currentPrice;
+                obj.currentSupply = currentSupply;
+                obj.currentReserve = currentReserve;
+            end
+        end
+
+
+   end
 end

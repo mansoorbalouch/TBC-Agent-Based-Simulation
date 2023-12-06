@@ -1,29 +1,42 @@
 classdef Agent
    properties
-      agentID;
-      liquidity;
-      holdings;
-      type;
+      agentID int64;
+      liquidity double;
+      holdings double;
+      holdingVol double;
+      type char;
    end
 
    methods
-       function mint(liquidity, buyFunc, currentSupply, deltaS)
-%            buyFunc = @(s) buyFunc
-            deltaR = integral(buyFunc, currentSupply, currentSupply+deltaS)
-            if liquidity >= deltaR
-                currentSupply = currentSupply + deltaS
-            else
-                print("Insufficient liquidity..")
+       function obj = Agent(agentID, liquidity, holdings, holdingVol, type)
+            if nargin > 0
+                obj.agentID = agentID;
+                obj.liquidity = liquidity;
+                obj.holdings = holdings;
+                obj.holdingVol = holdingVol;
+                obj.type = type;
             end
-         end
+        end
+       
+        function fundPrice = compFundPrice(agent, currentPrice, currentSupply)
+           
+           if agent.type == "Fundy"
+                fundPrice =  currentPrice + 10;
+                
+            elseif agent.type == "Charty"
+                fundPrice = currentPrice + 5;
+                
+            elseif agent.type == "Noisy"
+                fundPrice =  abs(currentPrice - 10);
+           else
+               fundPrice = currentPrice;
+           end
+           return
+       end
 
-         function burn(sellFunc, currentSupply, deltaS)
-            deltaR = integral(sellFunc, currentSupply, currentSupply-deltaS)
-            if liquidity >= deltaR
-                currentSupply = currentSupply - deltaS
-            else
-                print("Insufficient liquidity..")
-            end
-         end
+       function myAgents = createAgent(myAgents, agent)
+            myAgents = [myAgents, agent];
+          
+       end
    end
 end

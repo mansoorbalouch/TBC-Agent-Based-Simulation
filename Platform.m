@@ -2,45 +2,41 @@
 
 classdef Platform
    properties
-      fundPrice;
-      buyFunc;
-      sellFunc;
-      
+      buyFunc function_handle;
+      sellFunc function_handle;
+      transFee double;
    end
 
    methods
-       function compFundPrice(a, buy_func, s0, deltaS)
-           
-           if a.type == "Fundy"
-            fundPrice;
-            currentPrice;
-            if fundPrice > currentPrice
-                mint(100, buyFunc, 20, 50)
-            elseif fundPrice < currentPrice
-                burn(100, sellFunc, 20, 50)
+        function obj = Platform(buyFunc, sellFunc)
+            if nargin > 0
+                obj.buyFunc = buyFunc;
+                obj.sellFunc = sellFunc;
             end
-            return
-        elseif a.type =="Charty"
-            fundPrice;
-            currentPrice;
-            if fundPrice > currentPrice
-                mint(100, buyFunc, 20, 50)
-            elseif fundPrice < currentPrice
-                burn(100, sellFunc, 20, 50)
-            end
-            return
-        elseif a.type == "Noise"
-            fundPrice;
-            currentPrice;
-            if fundPrice > currentPrice
-                mint(100, buyFunc, 20, 50)
-            elseif fundPrice < currentPrice
-                burn(100, sellFunc, 20, 50)
-            end
-            return
         end
 
+        %  this function takes the number of tokens that the agent wants to buy, 
+        %  computes the total price to be paid, and updates the current supply
+        function [currentSupply, currentReserve] = mint(liquidity, buyFunc, currentSupply, deltaS, currentReserve)
+            deltaR = integral(buyFunc, currentSupply, currentSupply+deltaS);
+            if liquidity >= deltaR
+                currentSupply = currentSupply + deltaS;
+                currentReserve = currentReserve + deltaR;
+            else
+                currentSupply = currentSupply;
+                currentReserve = currentReserve
+            end
+         end
 
+         function [currentSupply, currentReserve] = burn(holdingVol, sellFunc, currentSupply, deltaS, currentReserve)
+            deltaR = integral(sellFunc, currentSupply, currentSupply-deltaS);
+            if holdingVol >= deltaR
+                currentSupply = currentSupply - deltaS;
+                currentReserve = currentReserve - deltaR;
+            else
+                currentSupply = currentSupply;
+                currentReserve = currentReserve
+            end
          end
 
    end

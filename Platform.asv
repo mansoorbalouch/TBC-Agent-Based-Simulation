@@ -1,0 +1,16 @@
+classdef Platform
+   properties
+      numAgents;
+      fundPrice;
+      buyFunc;
+      sellFunc;
+      
+   end
+
+   methods
+       function mint(tokenID, buy_func, s0, deltaS)
+            deltaR = integral(buy_func, s0, s0+deltaS)
+         end
+
+   end
+end

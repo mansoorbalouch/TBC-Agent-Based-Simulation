@@ -3,6 +3,7 @@
 classdef Token
    properties
       tokenID int64;
+      agentID int64;
       currentPrice double;
       currentSupply int64;
       currentReserve double;

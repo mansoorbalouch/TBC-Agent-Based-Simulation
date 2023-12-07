@@ -18,25 +18,5 @@ classdef Agent
             end
         end
        
-        function fundPrice = compFundPrice(agent, currentPrice, currentSupply)
-           
-           if agent.type == "Fundy"
-                fundPrice =  currentPrice + 10;
-                
-            elseif agent.type == "Charty"
-                fundPrice = currentPrice + 5;
-                
-            elseif agent.type == "Noisy"
-                fundPrice =  abs(currentPrice - 10);
-           else
-               fundPrice = currentPrice;
-           end
-           return
-       end
-
-       function myAgents = createAgent(myAgents, agent)
-            myAgents = [myAgents, agent];
-          
-       end
    end
 end

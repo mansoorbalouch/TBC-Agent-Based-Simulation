@@ -1,0 +1,45 @@
+% each agent type compute it's fundamental price
+function estPrice = estPrice(agent, currentPrice, currentSupply)
+    if agent.purpClass == "creator"       
+       if agent.type == "Fundy"
+           cashFlow;
+           discountRate;
+            % f = @(t) cashFlow_t
+            % fundPrice =  symsum(f,t,0,n)
+            fundPrice;
+            estPrice = fundPrice;
+        elseif agent.type == "Charty"
+            estPrice= currentPrice + 5;
+            
+        elseif agent.type == "Noisy"
+            estPrice =  abs(currentPrice - 10);
+       else
+           estPrice = currentPrice;
+       end
+    elseif agent.purpClass == "investor"
+        if agent.type == "Fundy"
+
+        elseif agent.type == "Charty"
+            estPrice= currentPrice + 5;
+            
+        elseif agent.type == "Noisy"
+            estPrice =  abs(currentPrice - 10);
+       else
+           estPrice = currentPrice;
+        end
+    
+    end
+end
+
+function fundPrice = compFundPrice()
+
+end
+
+function estPrice = compEstPrice()
+
+end
+
+function fundPrice = compPrice()
+
+end
+

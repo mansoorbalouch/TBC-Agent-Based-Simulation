@@ -1,6 +1,7 @@
 import pkg.Agent.*
 import pkg.Token.*
 import pkg.Platform.*
+import pkg.compFundPrice.*
 
 simSteps = 20;
 
@@ -88,56 +89,5 @@ filename = 'linear_tbc_sim_results.csv'; % File name for the CSV
 writetable(results, filename);
 disp("Simulation results saved to " + filename);
 
-
-% each agent type compute it's fundamental price
-function fundPrice = compFundPrice(agent, currentPrice, currentSupply)
-   
-   if agent.type == "Fundy"
-       cashFlow;
-       discountRate;
-        % f = @(t) cashFlow_t
-        % fundPrice =  symsum(f,t,0,n)
-        
-    elseif agent.type == "Charty"
-        fundPrice = currentPrice + 5;
-        
-    elseif agent.type == "Noisy"
-        fundPrice =  abs(currentPrice - 10);
-   else
-       fundPrice = currentPrice;
-   end
-   return
-end
-
-% create new agents and add to the agents list
-function myAgents = createAgent(myAgents, agent)
-    myAgents = [myAgents, agent];
-end
-
-
-%  this platform function takes the number of tokens that the agent wants to buy, 
-%  computes the total price to be paid, and updates the current supply
-function [currentSupply, currentReserve] = mint(liquidity, buyFunc, currentSupply, deltaS, currentReserve)
-    deltaR = integral(buyFunc, currentSupply, currentSupply+deltaS);
-    if liquidity >= deltaR
-        currentSupply = currentSupply + deltaS;
-        currentReserve = currentReserve + deltaR;
-    else
-        currentSupply = currentSupply;
-        currentReserve = currentReserve;
-    end
-    return
- end
-
- function [currentSupply, currentReserve] = burn(holdingVol, sellFunc, currentSupply, deltaS, currentReserve)
-    deltaR = integral(sellFunc, currentSupply, currentSupply-deltaS);
-    if holdingVol >= deltaR
-        currentSupply = currentSupply - deltaS;
-        currentReserve = currentReserve - deltaR;
-    else
-        currentSupply = currentSupply;
-        currentReserve = currentReserve;
-    end
- end
 
            

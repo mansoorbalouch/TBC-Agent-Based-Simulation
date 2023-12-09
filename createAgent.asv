@@ -1,0 +1,8 @@
+
+% create new agents and add to the agents list
+function myAgents = createAgent(myAgents, agent)
+%     create n agents with the proportion creators = 10%, investors = 20%, utilizers = 30%, and speculators = 40%
+
+    purpClass;
+    myAgents = [myAgents, agent];
+end

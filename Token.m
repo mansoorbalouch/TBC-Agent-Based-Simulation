@@ -3,22 +3,41 @@
 classdef Token
    properties
       tokenID int64;
-      agentID int64;
-      currentPrice double;
+      ownerAgentID int64;
+      
+      initialPrice double;
+      currentBuyPrice double;
+      currentSellPrice double;
       currentSupply int64;
-      currentReserve double;
-      quality int64;
+      quality int64; 
+      lifeCycleCurveShape char;
+      
+      monthlyExpectedDiscountedPrices_5years(1,60) double; %For use by Fundy Agents, to be populated after birth of token
+      monthlyPastAveragePrices_5years(1,60) double;
+      monthlyPastHighPrices_5years(1,60) double;
+      monthlyPastLowPrices_5years(1,60) double;
+      monthlyPastPricesStDev_5years(1,60) double;
+      monthlyPastAvgVol_5years(1,60) double;  % The above five indicators are to be used by Charty Agents, to be populated after birth of token until current month
    end
 
    methods
-       function obj = Token(tokenID, currentPrice, currentSupply, currentReserve, ...
-               quality)
+       function tokenObject = Token(tokenID, agentID, initPrice, currentBuyPrice, currentSellPrice, currentSupply, quality, ...
+                monthlyExpectedDiscountedPrices_5years, monthlyPastAveragePrices_5years , monthlyPastHighPrices_5years , ...
+                monthlyPastLowPrices_5years, monthlyPastPricesStDev_5years, monthlyPastAvgVol_5years)
             if nargin > 0
-                obj.tokenID = tokenID;
-                obj.currentPrice = currentPrice;
-                obj.currentSupply = currentSupply;
-                obj.currentReserve = currentReserve;
-                obj.quality = quality;
+                tokenObject.tokenID = tokenID;
+                tokenObject.ownerAgentID = agentID;
+                tokenObject.initialPrice = initPrice;
+                tokenObject.currentBuyPrice = currentBuyPrice;
+                tokenObject.currentSellPrice = currentSellPrice;
+                tokenObject.currentSupply = currentSupply;
+                tokenObject.quality = quality;
+                tokenObject.monthlyExpectedDiscountedPrices_5years = monthlyExpectedDiscountedPrices_5years;
+                tokenObject.monthlyPastAveragePrices_5years = monthlyPastAveragePrices_5years;
+                tokenObject.monthlyPastHighPrices_5years = monthlyPastHighPrices_5years;
+                tokenObject.monthlyPastLowPrices_5years = monthlyPastLowPrices_5years;
+                tokenObject.monthlyPastPricesStDev_5years = monthlyPastPricesStDev_5years;
+                tokenObject.monthlyPastAvgVol_5years = monthlyPastAvgVol_5years;
             end
         end
 

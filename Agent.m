@@ -1,28 +1,37 @@
 classdef Agent
    properties
       agentID int64;
-      purpClass char;
+      purposeCategory char;  %could be either "Creator", "Investor", "Utilizer", or "Speculator" 
       liquidity double;
-      % supply holdings and reserve volumes of n tokens
+      % holdings contain number of tokens held by this agent as key value pair
       holdings(2,:) int64;
-      holdingVol(2,:) double;
-      stratType char;
-      risk double;
-      activity double;
+      strategyType char;
+      riskAppetite double;
+      proActiveness double;
+      ownTokenId int64;
+      dayOfBirth int16;
+      dayOfPassing int16;
+      numTermsForeseen_Fundy  int16;
+      dailyWeights4MvngAvg_Charty(1,:) double;
+        
    end
 
    methods
-       function obj = Agent(agentID,purpClass, liquidity, holdings, holdingVol, ...
-               stratType, risk, activity)
+       function agentObject = Agent(agentID,purpClass, liquidity, holdings,stratType, ownTokenId, noTermsForeseen_Fundy,dailyWeights4MvngAvg_Charty)
             if nargin > 0
-                obj.agentID = agentID;
-                obj.purpClass = purpClass;
-                obj.liquidity = liquidity;
-                obj.holdings = holdings;
-                obj.holdingVol = holdingVol;
-                obj.stratType = stratType;
-                obj.risk = risk;
-                obj.activity = activity;
+                agentObject.agentID = agentID;
+                agentObject.purposeCategory = purpClass;
+                agentObject.liquidity = liquidity;
+                agentObject.holdings = holdings;
+                agentObject.strategyType = stratType;
+                
+                %agentObject.riskAppetite = risk;
+                %agentObject.proActiveness = activity;
+                agentObject.ownTokenId = ownTokenId;
+                agentObject.numTermsForeseen_Fundy = noTermsForeseen_Fundy;
+                agentObject.dailyWeights4MvngAvg_Charty = dailyWeights4MvngAvg_Charty;
+
+              
             end
         end
        

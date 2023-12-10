@@ -9,35 +9,16 @@ import pkg.createAgent.*
 
 simSteps = 20;
 
-% add/initialize agents
-% myAgents = [];
-agent1 = Agent( 1, 500, [2,4,6;7,5,8], 10, "Noisy",2);
-agent2 = Agent(2, 2000, [3,5,7;6,8,10], 50, "Noisy",6);
-agent3 = Agent(3, 1000, [1,6,9;12,26,11], 100, "Noisy",4);
-myAgents = [agent1 agent2 agent3];
-% myAgents = createAgent(myAgents, agent1);
-% myAgents = createAgent(myAgents, agent2);
-% myAgents = createAgent(myAgents, agent3);
+Agents = csvread("agents_tbc_simulation.csv");
 
-
-buyFunc = @(s) 2*s;
-sellFunc = @(s) 1.5*s;
-currentSupply = 5;
-currentReserve = 70;
-
-token1 = Token(1, currentPrice, currentSupply, currentReserve);
-token2 = Token(2, currentPrice, currentSupply, currentReserve);
-token3 = Token(3, currentPrice, currentSupply, currentReserve);
-
-
-paltform = Platform(buyFunc, sellFunc);
+platform = Platform();
 
 results= table('Size', [0, 4], 'VariableTypes', {'double','double', 'double', 'double'}, ...
     'VariableNames', {'AgentID','CurrentPrice', 'CurrentSupply', 'CurrentReserve'});
 
 for t=1:simSteps
-    %     select the active agents for step t
-    actAgents = myAgents;
+    %     select the /alive agents for step t
+    actAgents = Agents;
     numActAgents = length(myAgents);
 
     %    loop through the active agents and perform transactions

@@ -35,13 +35,19 @@ classdef Platform
         poor_mu_liquidity double;
         poor_sigma_liquidity double;
 
+        intelligencegap_mu_fundy double;
+        intelligencegap_sigma_fundy double;
+
+        numTermsForeseen_mu_fundy int16;
+        numTermsForeseen_sigma_fundy int16;
+
     end
 
     methods
-        function platFormObject = Platform(buyFunc, sellFunc, transFee)
-            if nargin > 0
-                platFormObject.buyFunc = buyFunc;
-                platFormObject.sellFunc = sellFunc;
+        function platFormObject = Platform()
+%             if nargin > 0
+                platFormObject.buyFunc = @(s) 2*s;
+                platFormObject.sellFunc = @(s) 1.5*s;
 
                 platFormObject.risk_mu_fundy = 20;
                 platFormObject.risk_sigma_fundy = 3;
@@ -63,7 +69,15 @@ classdef Platform
                 platFormObject.rich_sigma_liquidity = 1000;
                 platFormObject.poor_mu_liquidity = 2000;
                 platFormObject.poor_sigma_liquidity = 300;
-            end
+
+                platFormObject.intelligencegap_mu_fundy = 20;
+                platFormObject.intelligencegap_sigma_fundy = 5;
+                
+                platFormObject.numTermsForeseen_mu_fundy = 18;
+                platFormObject.numTermsForeseen_sigma_fundy = 3;
+
+
+%             end
         end
 
 

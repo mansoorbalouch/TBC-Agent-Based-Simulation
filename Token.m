@@ -13,6 +13,7 @@ classdef Token
       lifeCycleCurveShape char;
       
       monthlyExpectedDiscountedPrices_5years(1,60) double; %For use by Fundy Agents, to be populated after birth of token
+      
       monthlyPastAveragePrices_5years(1,60) double;
       monthlyPastHighPrices_5years(1,60) double;
       monthlyPastLowPrices_5years(1,60) double;

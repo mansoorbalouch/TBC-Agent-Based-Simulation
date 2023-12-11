@@ -1,7 +1,7 @@
 # TBC-Agent-Based-Simulation
 
 ## Overview
-This repository contains an agent-based simulation of a multi-token economy system. The simulation models the behavior of various platform participants, such as buyers, sellers, investors, traders, and speculators. It captures the heterogeneity, bounded rationality, learning, adaptation, and network effects of these agents.
+This repository contains an agent-based simulation of a multi-token economy system. The simulation models the behavior of various platform participants, such as creators, buyers, investors, and speculators. It captures the heterogeneity, bounded rationality, learning, adaptation, and network effects of these agents.
 
 ## Project Structure
 ### Classes

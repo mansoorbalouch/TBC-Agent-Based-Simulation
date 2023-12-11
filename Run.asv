@@ -25,17 +25,15 @@ for month=1:simulationMonths
         %    select an alive agent for minute m and perform a transaction
         %    check if the agent has liquidity (>0) and/or tokenholdlings >0
 
-            %   select the tokens that the agent can buy/sell (currentPrice < liquidity and tokenHoldings > 0) 
-            %   and store in a list tokensToBeTraded or availableTokens (essentially, the selected agent must perform a transaction)
+            %   select the tokens that the agent can buy/sell (currentPrice <
+            %   liquidity and tokenHoldings > 0) and store in a list
+            %   tokensToBeTraded or availableTokens
             
             %    select a token from the list to buy/sell
             %   if "noisy", then select token at random from the list and select buy/sell action
 
-                %   choose how much (deltaSupply) to buy/sell based on liquidity or token holdings and risk averseness 
-                %   perform transaction and update the token supply and price
-                %   [currentSupply, currentReserve] = mint(agent_i.liquidity, buyFunc, currentSupply,deltaS,currentReserve);
-                %   [currentSupply, currentReserve] = burn(agent_i.liquidity, sellFunc, currentSupply,deltaS,currentReserve);
-                        
+                %   choose how much to buy/sell based on liquidity or token holdings, 
+            
             %   if "fundy", compute the fundamental price of all available tokens and the choose
             %   token with highest DCF for buy and lowest fund-price for sell
     
@@ -44,14 +42,20 @@ for month=1:simulationMonths
     
     
             %    compute and update the buy and sell price of the traded token
-            %   currentBuyPrice = buyFunc(currentSupply);
-            %   currentSellPrice = sellFunc(currentSupply);
-       
-        %    else skip this simulation step --- no transaction
+            currentBuyPrice = buyFunc(currentSupply);
+            currentSellPrice = sellFunc(currentSupply);
 
+
+        if estPrice > currentBuyPrice
+            deltaS = abs(randn(1));
+            [currentSupply, currentReserve] = mint(actAgents(i).liquidity, buyFunc, currentSupply,deltaS,currentReserve);
+        elseif estPrice < currentSellPrice
+            deltaS = abs(randn(1));
+            [currentSupply, currentReserve] = burn(actAgents(i).liquidity, sellFunc, currentSupply,deltaS,currentReserve);
+        end
 
         % append results to the table
-        newResults= table(agent_i.agentID, currentBuyPrice, currentSupply, currentReserve, ...
+        newResults= table(actAgents(i).agentID, currentBuyPrice, currentSupply, currentReserve, ...
     'VariableNames', {'AgentID','CurrentPrice', 'CurrentSupply', 'CurrentReserve'});
 
         results = [results; newResults];

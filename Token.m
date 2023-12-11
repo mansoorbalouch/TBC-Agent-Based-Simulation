@@ -9,8 +9,7 @@ classdef Token
       currentBuyPrice double;
       currentSellPrice double;
       currentSupply int64;
-      quality int64; 
-      lifeCycleCurveShape char;
+      lifeCycleCurveShape char; % any of the 28 token types based on their supply life cycle
       
       monthlyExpectedDiscountedPrices_5years(1,60) double; %For use by Fundy Agents, to be populated after birth of token
       
@@ -32,7 +31,8 @@ classdef Token
                 tokenObject.currentBuyPrice = currentBuyPrice;
                 tokenObject.currentSellPrice = currentSellPrice;
                 tokenObject.currentSupply = currentSupply;
-                tokenObject.quality = quality;
+                tokenObject.lifeCycleCurveShape = lifeCycleCurveShape;
+
                 tokenObject.monthlyExpectedDiscountedPrices_5years = monthlyExpectedDiscountedPrices_5years;
                 tokenObject.monthlyPastAveragePrices_5years = monthlyPastAveragePrices_5years;
                 tokenObject.monthlyPastHighPrices_5years = monthlyPastHighPrices_5years;

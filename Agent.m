@@ -13,7 +13,7 @@ classdef Agent
         dayOfBirth int16;
         dayOfPassing int16;
         numTermsForeseen_Fundy  int16;
-        dailyWeights4MvngAvg_Charty(1,:) double;
+        dailyWeights4MvngAvg_Charty(1,60) double;
 
     end
 

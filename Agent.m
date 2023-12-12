@@ -22,10 +22,7 @@ classdef Agent
             if nargin > 0
 %                 agentObject.agentID = agentID;
                 agentObject.purposeCategory = purpClass;
-%                 agentObject.strategyType = strategyType;
-%                 agentObject.holdings = holdings;
                 agentObject.dayOfBirth = DoB;
-%                 agentObject.dayOfPassing = DoD;
                 agentObject.intelligenceGap = 0;
 
 
@@ -49,7 +46,7 @@ classdef Agent
                     agentObject.strategyType ="none";
                     agentObject.proActiveness = 0;
                     agentObject.liquidity = 0;
-                    agentObject.dayOfPassing = DoB + 36; % average age = 3 years
+                    agentObject.dayOfPassing = DoB + Platform.creator_mu_DayOfPassing + Platform.creator_sigma_DayOfPassing * randn; % average age = 3 years
                 elseif agentObject.purposeCategory == "Investor"
                     if randNumber <=.9
                         agentObject.strategyType = "fundy";
@@ -67,7 +64,7 @@ classdef Agent
                         agentObject.proActiveness = Platform.activity_mu_noisy + Platform.activity_sigma_noisy * randn;
                     end
                     agentObject.liquidity = Platform.rich_mu_liquidity + Platform.rich_sigma_liquidity* randn();
-                    agentObject.dayOfPassing = DoB + 48; % average age = 4 years
+                    agentObject.dayOfPassing = DoB + Platform.rich_mu_DayOfPassing + Platform.rich_sigma_DayOfPassing* randn(); % average age = 4 years
                 elseif agentObject.purposeCategory == "Utilizer"
                     if randNumber <=.9
                         agentObject.strategyType = "charty";
@@ -85,7 +82,7 @@ classdef Agent
                         agentObject.proActiveness = Platform.activity_mu_noisy + Platform.activity_sigma_noisy * randn(1);
                     end
                     agentObject.liquidity = Platform.midClass_mu_liquidity + Platform.midClass_sigma_liquidity* randn();
-                    agentObject.dayOfPassing = DoB + 24; % average age = 2 years
+                    agentObject.dayOfPassing = DoB + Platform.midClass_mu_DayOfPassing + Platform.midClass_sigma_DayOfPassing* randn(); % average age = 2 years
                 else %Speculator
                     if randNumber <=.8
                         agentObject.strategyType = "noisy";
@@ -103,7 +100,7 @@ classdef Agent
                         agentObject.numTermsForeseen_Fundy = Platform.numTermsForeseen_mu_fundy + Platform.numTermsForeseen_sigma_fundy * randn;
                     end
                     agentObject.liquidity = Platform.poor_mu_liquidity + Platform.poor_sigma_liquidity* randn();
-                    agentObject.dayOfPassing = DoB + 12; % average age = 1 year
+                    agentObject.dayOfPassing = DoB + Platform.poor_mu_DayOfPassing + Platform.poor_sigma_DayOfPassing* randn(); % average age = 1 year
                     
                 end
 

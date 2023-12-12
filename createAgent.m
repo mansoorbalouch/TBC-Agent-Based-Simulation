@@ -1,5 +1,5 @@
-import pkg.Agent.*
-import pkg.Platform.*
+% import pkg.Agent.*
+% import pkg.Platform.*
 
 % create new agents and add to the agents list
 % create n agents with the proportion creators = 10%, investors = 20%, utilizers = 30%, and speculators = 40%
@@ -8,8 +8,12 @@ import pkg.Platform.*
 
 mu_agents_monthly=170; % create 10k agents using the pisson distribution
 total_months = 60; 
+j = 1;
+numAgents = 10500;
 
 agentID = 1; % initialize agentID and ownTokenID = 1
+agentPurposeCategories =[ "Investor", "Creator","Utilizer","Speculator"];
+myAgentsPurposeCategories = randsample(agentPurposeCategories, numAgents,true,[0.2,0.1,0.3,0.4]);
 
 agentsBornMonthly = poissrnd(mu_agents_monthly,1,total_months); 
 
@@ -23,7 +27,7 @@ for month=1:60
     for i = 1:agentsBornMonthly(month)
         DoB = month;
 
-        agent_i = Agent("Investor", month, platform);
+        agent_i = Agent(myAgentsPurposeCategories(j), month, platform);
         dailyWeights4MvngAvg_Charty = mat2cell([3,6,8],[1],[3]);
         tokenHoldings = mat2cell([0;0],[2],[1]);
 
@@ -35,6 +39,7 @@ for month=1:60
 
         myAgents = [myAgents; agent];
         agentID = agentID + 1;
+        j = j+ 1;
 
     end
 

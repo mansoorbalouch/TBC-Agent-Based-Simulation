@@ -6,6 +6,11 @@ classdef Platform
         sellFunction function_handle;
         transactionFee double;
         discountRate double;
+        numAgents int16;
+        numTokens int16;
+
+        myAgents(:,1) Agent;
+        myToken(:,1) Token;
 
 
         % The following assume that we have different normal
@@ -95,7 +100,7 @@ classdef Platform
                 platFormObject.poor_mu_DayOfPassing = 12;
                 platFormObject.poor_sigma_DayOfPassing = 2;      
 
-%                 [myAgents, myTokens] = createAgentsAndTokens(100)
+%                  [myAgents, myTokens] = createAgentsAndTokens(500);
 %             end
 
         end
@@ -107,58 +112,58 @@ classdef Platform
             % assign strategies to the agents based on their category
             % assign liquidity to each agent agent based on their category
             
-            myAgents = [];
-            myTokens = [];
+%             myAgents = [];
+%             myTokens = [];
             total_months = 60; 
             total_years = total_months/12;
             
             agentID  = 1; % initialize agentID and ownTokenID 
             tokenID = 1;
             j=1;
-
+            
             agentPurposeCategories =[ "Investor", "Creator","Utilizer","Speculator"];
             myAgentsPurposeCategories = randsample(agentPurposeCategories, numAgents,true,[0.2,0.1,0.3,0.4]);
             
             % agentsBornMonthly = poissrnd(mu_agents_monthly,1,total_months); 
             agentsBornYearly = [0.025*numAgents, 0.0135*numAgents, 0.34*numAgents, 0.34*numAgents, 0.16*numAgents];
             
-            platform = Platform();
-            dailyWeights4MvngAvg_Charty = [];
-            tokenHoldings = [0;0];
             
             for term=1:total_years
                 for i = 1:agentsBornYearly(term)
-                    agent_i = Agent(myAgentsPurposeCategories(j), term, platform);
+                    agent_i = Agent(myAgentsPurposeCategories(j), term, Platform);
                                
-                    newAgent = [agentID, agent_i.purposeCategory, agent_i.strategyType, agent_i.liquidity, tokenHoldings, agent_i.riskAppetite, ...
-                        agent_i.proActiveness, agent_i.intelligenceGap, agentID, agent_i.dayOfBirth, ...
+                    newAgent = [agentID, agent_i.purposeCategory, agent_i.strategyType, agent_i.liquidity, tokenHoldingsIDs, tokenHoldingsValues, ...
+                        agent_i.riskAppetite, agent_i.proActiveness, agent_i.intelligenceGap, agentID, agent_i.dayOfBirth, ...
                         agent_i.dayOfPassing, agent_i.numTermsForeseen_Fundy, dailyWeights4MvngAvg_Charty];
+                
+                    if agent_i.purposeCategory == "Creator"
                     
-                    token_i = Token(tokenID, agentID, 0,0,0, [],[],[],[],[]); 
-                    newToken = [tokenID, agentID, token_i.currentBuyPrice, token_i.currentSellPrice, token_i.currentSupply, token_i.lifeCycleCurveShape, ...
-                        token_i.monthlyExpectedDiscountedPrices_5years, token_i.monthlyPastAveragePrices_5years, token_i.monthlyPastHighPrices_5years, ...
-                        token_i.monthlyPastLowPrices_5years, token_i.monthlyPastPricesStDev_5years, token_i.monthlyPastAvgVol_5years];
-
+                        token_i = Token(tokenID, agentID, 0,0,0); 
+                        newToken = [tokenID, agentID, token_i.currentBuyPrice, token_i.currentSellPrice, token_i.currentSupply, token_i.lifeCycleCurveShape, ...
+                            token_i.monthlyExpectedDiscountedPrices_5years, token_i.monthlyPastAveragePrices_5years, token_i.monthlyPastHighPrices_5years, ...
+                            token_i.monthlyPastLowPrices_5years, token_i.monthlyPastPricesStDev_5years, token_i.monthlyPastAvgVol_5years];
+                        myTokens = [myTokens; newToken];
+                        tokenID = tokenID + 1;
+                    end
+                
                     myAgents = [myAgents; newAgent];
-                    myTokens = [myTokens; newToken];
+                    
                     
                     agentID = agentID + 1;
-                    tokenID = tokenID + 1;
                     j = j + 1;
-            
+                
                 end
             
             end
-
         end
 
 
         function Run(myAgents, myTokens, numSimulationMonths, platform)
             numSimulationMinutesPerMonth = 30*24*numSimulationMonths;
-            Agents = readtable("agents_tbc_simulation.csv");
+%             myAgents = readtable("agents_tbc_simulation.csv");
             
-            for simulationMonth=1:simulationMonths
-                aliveAgents = Agents(Agents.DayOfBirth < simulationMonth+1 & Agents.DayOfPassing > simulationMonth+1 ,:) ;
+            for simulationMonth=1:numSimulationMonths
+                aliveAgents = myAgents(myAgents.DayOfBirth < simulationMonth+1 & myAgents.DayOfPassing > simulationMonth+1 ,:) ;
 
                 %     update the monthly record (moving avg, min-max price, DCF, etc.) of all tokens
                 %     initialize the buy/sell price of all tokens
@@ -176,18 +181,18 @@ classdef Platform
                             if (transactingAgent.Liquidity > 0 ) && (transactingAgent.Holdings > 0 ) % buy/sell equally likely
                                 action = randsample(["buy", "sell"],1);
                                 if action=="buy"
-                                        % compute deltaSupplyMax and decide deltaSupply
-                                        transactingTokenID = randsample(myTokens.TokenID, 1);
-                                        transactingToken = myTokens(myTokens.TokenID == transactingTokenID,:);
+                                    % compute deltaSupplyMax and decide deltaSupply
+                                    transactingTokenID = randsample(myTokens.TokenID, 1);
+                                    transactingToken = myTokens(myTokens.TokenID == transactingTokenID,:);
 
-                                        %   choose how much (deltaSupply) to buy/sell based on liquidity or token holdings and risk averseness 
-                                        
-                                        costDeltaSupply = integral(platform.buyFunction, currentSupply, currentSupply + deltaSupply);
+                                    %   choose how much (deltaSupply) to buy/sell based on liquidity or token holdings and risk averseness 
+                                    
+                                    costDeltaSupply = integral(platform.buyFunction, currentSupply, currentSupply + deltaSupply);
 
-                                        % update current token supply and price
+                                    % update current token supply and price
 
-                                        transactingToken.currentSupply = transactingToken.currentSupply + deltaSupply;
-                                        transactingToken.currentReserve = transactingToken.currentReserve + costDeltaSupply;
+                                    transactingToken.currentSupply = transactingToken.currentSupply + deltaSupply;
+                                    transactingToken.currentReserve = transactingToken.currentReserve + costDeltaSupply;
                                 else % sell
                                     transactingTokenID = randsample(transactingAgent.Holdings, 1);
                                     transactingToken = myTokens(myTokens.TokenID == transactingTokenID,:);

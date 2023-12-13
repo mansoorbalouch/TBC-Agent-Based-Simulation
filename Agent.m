@@ -5,31 +5,32 @@ classdef Agent
         strategyType string;
         liquidity double;
         % holdings contain number of tokens held by this agent as key value pair
-        holdings(2,:) int64;
-        riskAppetite double;
-        proActiveness double;
+        tokenHoldingsIDs(1,:) int64;
+        tokenHoldingsValues(1,:) int64;
+        riskAppetite int16; % between 0 and 100
+        proActiveness int16; 
         intelligenceGap double;
         ownTokenId int64;
         dayOfBirth int16;
         dayOfPassing int16;
-        numTermsForeseen_Fundy  int16;
+        numTermsForeseen_Fundy int16;
         dailyWeights4MvngAvg_Charty(1,60) double;
 
     end
 
     methods
-        function agentObject = Agent(purpClass,DoB, Platform)
+        function agentObject = Agent(agentID, purpClass,DoB, Platform, ownTokenId)
             if nargin > 0
-%                 agentObject.agentID = agentID;
+                agentObject.agentID = agentID;
                 agentObject.purposeCategory = purpClass;
                 agentObject.dayOfBirth = DoB;
                 agentObject.intelligenceGap = 0;
-
-
-%                 agentObject.ownTokenId = ownTokenId;
+                agentObject.ownTokenId = ownTokenId;
                 
                 agentObject.numTermsForeseen_Fundy = 0;
-%                 agentObject.dailyWeights4MvngAvg_Charty = dailyWeights4MvngAvg_Charty;
+                agentObject.dailyWeights4MvngAvg_Charty = zeros([1,60]);
+                agentObject.tokenHoldingsIDs = [0];
+                agentObject.tokenHoldingsValues = [0];
                 
                 randNumber = rand();
                 

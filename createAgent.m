@@ -28,7 +28,7 @@ for month=1:60
         DoB = month;
 
         agent_i = Agent(myAgentsPurposeCategories(j), month, platform);
-        dailyWeights4MvngAvg_Charty = mat2cell([3,6,8],[1],[3]);
+        dailyWeights4MvngAvg_Charty = mat2cell(zeros([1,60]),[1],[60]);
         tokenHoldings = mat2cell([0;0],[2],[1]);
 
         agent = table(agentID, agent_i.purposeCategory, agent_i.strategyType, agent_i.liquidity, tokenHoldings, agent_i.riskAppetite, ...
@@ -46,6 +46,6 @@ for month=1:60
 end
 
 % write table data to a CSV file
-filename = 'agents_tbc_simulation.csv'; 
+filename = 'agents_tbc_simulation1.csv'; 
 writetable(myAgents, filename);
 disp("Simulation results saved to " + filename);

@@ -21,9 +21,7 @@ classdef Token
    end
 
    methods
-       function tokenObject = Token(tokenID, agentID, currentBuyPrice, currentSellPrice, currentSupply, ...
-                monthlyPastAveragePrices_5years , monthlyPastHighPrices_5years , ...
-                monthlyPastLowPrices_5years, monthlyPastPricesStDev_5years, monthlyPastAvgVol_5years)
+       function tokenObject = Token(tokenID, agentID, currentBuyPrice, currentSellPrice, currentSupply)
             if nargin > 0
                 tokenObject.tokenID = tokenID;
                 tokenObject.ownerAgentID = agentID;
@@ -32,11 +30,11 @@ classdef Token
                 tokenObject.currentSellPrice = currentSellPrice;
                 tokenObject.currentSupply = currentSupply;
 
-                tokenObject.monthlyPastAveragePrices_5years = monthlyPastAveragePrices_5years;
-                tokenObject.monthlyPastHighPrices_5years = monthlyPastHighPrices_5years;
-                tokenObject.monthlyPastLowPrices_5years = monthlyPastLowPrices_5years;
-                tokenObject.monthlyPastPricesStDev_5years = monthlyPastPricesStDev_5years;
-                tokenObject.monthlyPastAvgVol_5years = monthlyPastAvgVol_5years;
+                tokenObject.monthlyPastAveragePrices_5years = zeros([1,60]);
+                tokenObject.monthlyPastHighPrices_5years = zeros([1,60]);
+                tokenObject.monthlyPastLowPrices_5years = zeros([1,60]);
+                tokenObject.monthlyPastPricesStDev_5years = zeros([1,60]);
+                tokenObject.monthlyPastAvgVol_5years = zeros([1,60]);
 
                 lifeCycleCurveShapes = ["Traditional_1x","Boom_1x","Fad_1x","Revival_1x","ExtendedFad_1x","Seasonal_1x","Bust_1x", ...
                     "Traditional_2x","Boom_2x","Fad_2x","Revival_2x","ExtendedFad_2x","Seasonal_2x","Bust_2x", ...
@@ -44,8 +42,9 @@ classdef Token
                     "Traditional_4x","Boom_4x","Fad_4x","Revival_4x","ExtendedFad_4x","Seasonal_4x","Bust_4x",];
 
                 tokenObject.lifeCycleCurveShape = randsample(lifeCycleCurveShapes,1);
-                tblMonthlyExpectedDiscountedPrices_5years = readtable("monthlyExpectedDiscountedPrices_5years.csv");
-                tokenObject.monthlyExpectedDiscountedPrices_5years = tblMonthlyExpectedDiscountedPrices_5years.lifeCycleCurveShape;
+%                 tblMonthlyExpectedDiscountedPrices_5years = readtable("monthlyExpectedDiscountedPrices_5years.csv");
+%                 tokenObject.monthlyExpectedDiscountedPrices_5years = tblMonthlyExpectedDiscountedPrices_5years.lifeCycleCurveShape;
+                tokenObject.monthlyExpectedDiscountedPrices_5years = rand(1,60);
                 
             end
         end

@@ -2,8 +2,8 @@
 
 classdef Platform
     properties
-        buyFunc function_handle;
-        sellFunc function_handle;
+        buyFunction function_handle;
+        sellFunction function_handle;
         transactionFee double;
         discountRate double;
 
@@ -55,8 +55,8 @@ classdef Platform
     methods
         function platFormObject = Platform()
 %             if nargin > 0
-                platFormObject.buyFunc = @(s) 2*s;
-                platFormObject.sellFunc = @(s) 1.5*s;
+                platFormObject.buyFunction = @(s) 2*s;
+                platFormObject.sellFunction = @(s) 1.5*s;
 
                 platFormObject.risk_mu_fundy = 20;
                 platFormObject.risk_sigma_fundy = 3;
@@ -95,7 +95,7 @@ classdef Platform
                 platFormObject.poor_mu_DayOfPassing = 12;
                 platFormObject.poor_sigma_DayOfPassing = 2;      
 
-
+%                 [myAgents, myTokens] = createAgentsAndTokens(100)
 %             end
 
         end
@@ -153,7 +153,7 @@ classdef Platform
         end
 
 
-        function Run(myAgents, myTokens, numSimulationMonths)
+        function Run(myAgents, myTokens, numSimulationMonths, platform)
             numSimulationMinutesPerMonth = 30*24*numSimulationMonths;
             Agents = readtable("agents_tbc_simulation.csv");
             
@@ -168,29 +168,66 @@ classdef Platform
                     transactingAgentID = randsample(aliveAgents.AgentID, 1, true, aliveAgents.ProActiveness);
                     transactingAgent = aliveAgents(aliveAgents.AgentID == transactingAgentID,:);
 
-                 %    check if the agent has liquidity (>0) and/or tokenholdlings >0
-                   if (transactingAgent.Liquidity > 0 )  
+                 %    check if the agent has some liquidity or tokenholdlings
+                   if (transactingAgent.Liquidity > 0) || (transactingAgent.Holdings > 0 )  
                     
                         if (transactingAgent.StrategyType == "noisy")
                         %    choose a buy/sell action
                             if (transactingAgent.Liquidity > 0 ) && (transactingAgent.Holdings > 0 ) % buy/sell equally likely
                                 action = randsample(["buy", "sell"],1);
                                 if action=="buy"
-                                        % compute delta s_max and decide
-                                        % delta s
-                                        % perfrom transaction
+                                        % compute deltaSupplyMax and decide deltaSupply
+                                        transactingTokenID = randsample(myTokens.TokenID, 1);
+                                        transactingToken = myTokens(myTokens.TokenID == transactingTokenID,:);
+
+                                        %   choose how much (deltaSupply) to buy/sell based on liquidity or token holdings and risk averseness 
+                                        
+                                        costDeltaSupply = integral(platform.buyFunction, currentSupply, currentSupply + deltaSupply);
+
                                         % update current token supply and price
-                                else
+
+                                        transactingToken.currentSupply = transactingToken.currentSupply + deltaSupply;
+                                        transactingToken.currentReserve = transactingToken.currentReserve + costDeltaSupply;
+                                else % sell
+                                    transactingTokenID = randsample(transactingAgent.Holdings, 1);
+                                    transactingToken = myTokens(myTokens.TokenID == transactingTokenID,:);
+                                    
+                                    costDeltaSupply = - integral(platform.sellFunction, currentSupply - deltaSupply, currentSupply);
+
+                                    % update current token supply and price
+
+                                    transactingToken.currentSupply = transactingToken.currentSupply - deltaSupply;
+                                    transactingToken.currentReserve = transactingToken.currentReserve - costDeltaSupply;
                                 end
 
                             elseif (transactingAgent.Liquidity == 0 ) && (transactingAgent.Holdings > 0 ) % can only sell the tokens held
-                                action = "sell";
+                                transactingTokenID = randsample(transactingAgent.Holdings, 1);
+                                transactingToken = myTokens(myTokens.TokenID == transactingTokenID,:);
+                                
+                                costDeltaSupply = - integral(platform.sellFunction, currentSupply - deltaSupply, currentSupply);
 
-                            else % can only buy tokens
-                                action= "buy";
+                                % update current token supply and price
+
+                                transactingToken.currentSupply = transactingToken.currentSupply - deltaSupply;
+                                transactingToken.currentReserve = transactingToken.currentReserve - costDeltaSupply;
+
+                            elseif (transactingAgent.Liquidity > 0 ) && (transactingAgent.Holdings == 0 ) % can only buy tokens
+
+                                transactingTokenID = randsample(myTokens.TokenID, 1);
+                                transactingToken = myTokens(myTokens.TokenID == transactingTokenID,:);
+
+                                %   choose how much (deltaSupply) to buy/sell based on liquidity or token holdings and risk averseness 
+                                
+                                costDeltaSupply = integral(platform.buyFunction, currentSupply, currentSupply + deltaSupply);
+
+                                % update current token supply and price
+
+                                transactingToken.currentSupply = transactingToken.currentSupply + deltaSupply;
+                                transactingToken.currentReserve = transactingToken.currentReserve + costDeltaSupply;
+                                
                             end
             
-                            %   choose how much (deltaSupply) to buy/sell based on liquidity or token holdings and risk averseness 
+                            
                             %   perform transaction and update the token supply and price
                         
                         elseif (transactingAgent.StrategyType == "fundy")
@@ -208,8 +245,9 @@ classdef Platform
                         %   currentBuyPrice = buyFunc(currentSupply);
                         %   currentSellPrice = sellFunc(currentSupply);
                    
-                    %    else skip this simulation step --- no transaction
-
+                    
+                   else
+                       %    skip this simulation step --- no transaction
 
                     end
             

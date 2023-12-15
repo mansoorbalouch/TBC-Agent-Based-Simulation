@@ -15,8 +15,8 @@ classdef Token
 
       monthlyPriceRunningSum double;
       monthlyNumTransactionsRunningSum int16;
-      monthlyHighestPrice int16;
-      monthlyLowestPrice int16;
+      monthlyHighPrice int64;
+      monthlyLowPrice int64;
       
       monthlyPastAveragePrices_5years(1,:) double;
       monthlyPastHighPrices_5years(1,:) double;
@@ -39,8 +39,8 @@ classdef Token
 
                 tokenObject.monthlyPriceRunningSum = 0;
                 tokenObject.monthlyNumTransactionsRunningSum = 0;
-                tokenObject.monthlyHighestPrice  = 0;
-                tokenObject.monthlyLowestPrice = 0;
+                monthlyHighPrice  = 0;
+                monthlyLowPrice = 0;
 
                 tokenObject.monthlyPastAveragePrices_5years = zeros([1,60]);
                 tokenObject.monthlyPastHighPrices_5years = zeros([1,60]);

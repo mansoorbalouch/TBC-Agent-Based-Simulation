@@ -182,7 +182,7 @@ classdef Platform
                         aliveAgents = [aliveAgents, platFormObject.myAgents(i)];
                     end
                 end
-%                                 aliveAgents.proActiveness
+                %                 aliveAgents.proActiveness
                 %     initialize the buy/sell price of all tokens
 
                 for minute=1:numSimulationMinutesPerMonth

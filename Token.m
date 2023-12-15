@@ -11,17 +11,22 @@ classdef Token
       currentSupply double;
       lifeCycleCurveShape string; % any of the 28 token supply cycles
       
-      monthlyExpectedDiscountedPrices_5years(1,:) double; %For use by Fundy Agents, to be populated after birth of token
+      monthlyExpectedFairPrices_5years(1,:) double; %For use by Fundy Agents, to be populated after birth of token
+
+      monthlyPriceRunningSum double;
+      monthlyNumTransactionsRunningSum int16;
       
       monthlyPastAveragePrices_5years(1,:) double;
       monthlyPastHighPrices_5years(1,:) double;
       monthlyPastLowPrices_5years(1,:) double;
       monthlyPastPricesStDev_5years(1,:) double;
       monthlyPastAvgVol_5years(1,:) double;  % The above five indicators are to be used by Charty Agents, to be populated after birth of token until current month
+
+
    end
 
    methods
-       function tokenObject = Token(tokenID, agentID, currentBuyPrice, currentSellPrice, currentSupply)
+       function tokenObject = Token(tokenID, agentID, currentBuyPrice, currentSellPrice, currentSupply,tokenTypes_5Years_Expected_Prices, lifeCycleCurveShapeID)
             if nargin > 0
                 tokenObject.tokenID = tokenID;
                 tokenObject.ownerAgentID = agentID;
@@ -30,21 +35,23 @@ classdef Token
                 tokenObject.currentSellPrice = currentSellPrice;
                 tokenObject.currentSupply = currentSupply;
 
+                tokenObject.monthlyPriceRunningSum = 0;
+                tokenObject.monthlyNumTransactionsRunningSum = 0;
+
                 tokenObject.monthlyPastAveragePrices_5years = zeros([1,60]);
                 tokenObject.monthlyPastHighPrices_5years = zeros([1,60]);
                 tokenObject.monthlyPastLowPrices_5years = zeros([1,60]);
                 tokenObject.monthlyPastPricesStDev_5years = zeros([1,60]);
                 tokenObject.monthlyPastAvgVol_5years = zeros([1,60]);
 
-                lifeCycleCurveShapes = ["Traditional_1x","Boom_1x","Fad_1x","Revival_1x","ExtendedFad_1x","Seasonal_1x","Bust_1x", ...
-                    "Traditional_2x","Boom_2x","Fad_2x","Revival_2x","ExtendedFad_2x","Seasonal_2x","Bust_2x", ...
-                    "Traditional_3x","Boom_3x","Fad_3x","Revival_3x","ExtendedFad_3x","Seasonal_3x","Bust_3x", ...
-                    "Traditional_4x","Boom_4x","Fad_4x","Revival_4x","ExtendedFad_4x","Seasonal_4x","Bust_4x",];
+                lifeCycleCurveShapes = ["Traditional_1x","Boom_classic_1x","Fad_1x","Revival_1x","Extended_Fad_1x","Seasonal_1x","Bust_1x", ...
+                    "Traditional_2x","Boom_classic_2x","Fad_2x","Revival_2x","Extended_Fad_2x","Seasonal_2x","Bust_2x", ...
+                    "Traditional_3x","Boom_classic_3x","Fad_3x","Revival_3x","Extended_Fad_3x","Seasonal_3x","Bust_3x", ...
+                    "Traditional_4x","Boom_classic_4x","Fad_4x","Revival_4x","Extended_Fad_4x","Seasonal_4x","Bust_4x",];
 
-                tokenObject.lifeCycleCurveShape = randsample(lifeCycleCurveShapes,1);
-%                 tblMonthlyExpectedDiscountedPrices_5years = readtable("monthlyExpectedDiscountedPrices_5years.csv");
-%                 tokenObject.monthlyExpectedDiscountedPrices_5years = tblMonthlyExpectedDiscountedPrices_5years.lifeCycleCurveShape;
-                tokenObject.monthlyExpectedDiscountedPrices_5years = rand(1,60);
+                tokenObject.lifeCycleCurveShape = lifeCycleCurveShapes(lifeCycleCurveShapeID);
+                tokenObject.monthlyExpectedFairPrices_5years = tokenTypes_5Years_Expected_Prices(:,lifeCycleCurveShapeID);
+%                 tokenObject.monthlyExpectedDiscountedPrices_5years = rand(1,60);
                 
             end
         end

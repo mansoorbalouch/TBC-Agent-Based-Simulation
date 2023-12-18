@@ -190,6 +190,7 @@ classdef Platform
                     %    select an alive agent for minute m and perform a transaction
                     transactingAgentID = randsample([aliveAgents.agentID], 1, true, double([aliveAgents.proActiveness]));
                     transactingAgent = aliveAgents([aliveAgents.agentID] == transactingAgentID);
+                    action = "";
 
                     %    check if the agent has some liquidity or tokenholdlings
                     if ((transactingAgent.liquidity > 0) || (width(transactingAgent.tokenHoldingsIDs) > 0 ))
@@ -282,7 +283,7 @@ classdef Platform
                                 f = W(k)*FP(k) * (1-platFormObject.myAgents(transactingAgentID).intelligenceGap); % weights * fair prices * (1 - intelligence gap)
 
                                 W = platFormObject.myAgents(transactingAgentID).monthlyWeights4ExpPrice_Fundy(1:platFormObject.myAgents(transactingAgentID).numTermsForeseen_Fundy);
-                                FP = platFormObject.myTokens(token).monthlyExpectedFairPrices_5years(1:platFormObject.myAgents(transactingAgentID).numTermsForeseen_Fundy);
+                                FP = platFormObject.myTokens(token).monthlyFairPrices_5years(1:platFormObject.myAgents(transactingAgentID).numTermsForeseen_Fundy);
                                 exp_price = symsum(f,k,1,platFormObject.myAgents(transactingAgentID).numTermsForeseen_Fundy);
                                 tokensExpectedPrices(token) = round(sum([subs(exp_price, {'W', 'FP'}, {W, FP})]),2);
                             end
@@ -403,17 +404,17 @@ classdef Platform
                         platFormObject.myTokens(transactingTokenID).currentSupply = platFormObject.myTokens(transactingTokenID).currentSupply + deltaSupply;
                         platFormObject.myTokens(transactingTokenID).currentBuyPrice = platFormObject.buyFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
                         platFormObject.myTokens(transactingTokenID).currentSellPrice = platFormObject.sellFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
-                        platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum = platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum + platFormObject.myTokens(transactingTokenID).currentSellPrice;
-                        platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum = platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum + 1;
+                        platFormObject.myTokens(transactingTokenID).currentMonthPriceRunningSum= platFormObject.myTokens(transactingTokenID).currentMonthPriceRunningSum+ platFormObject.myTokens(transactingTokenID).currentSellPrice;
+                        platFormObject.myTokens(transactingTokenID).currentMonthNumTransactionsRunningCount = platFormObject.myTokens(transactingTokenID).currentMonthNumTransactionsRunningCount + 1;
 
-                        if platFormObject.myTokens(transactingTokenID).currentBuyPrice > platFormObject.myTokens(transactingTokenID).monthlyHighestPrice % check the current price to update the high/low price of the token
-                            platFormObject.myTokens(transactingTokenID).monthlyHighestPrice = platFormObject.myTokens(transactingTokenID).currentBuyPrice;
+                        if platFormObject.myTokens(transactingTokenID).currentBuyPrice > platFormObject.myTokens(transactingTokenID).currentMonthHighestPrice% check the current price to update the high/low price of the token
+                            platFormObject.myTokens(transactingTokenID).currentMonthHighestPrice= platFormObject.myTokens(transactingTokenID).currentBuyPrice;
                         end
-                        if platFormObject.myTokens(transactingTokenID).monthlyLowestPrice == 0
-                            platFormObject.myTokens(transactingTokenID).monthlyLowestPrice= platFormObject.myTokens(transactingTokenID).currentBuyPrice;
+                        if platFormObject.myTokens(transactingTokenID).currentMonthLowestPrice == 0
+                            platFormObject.myTokens(transactingTokenID).currentMonthLowestPrice= platFormObject.myTokens(transactingTokenID).currentBuyPrice;
                         end
-                        if platFormObject.myTokens(transactingTokenID).currentBuyPrice < platFormObject.myTokens(transactingTokenID).monthlyLowestPrice
-                            platFormObject.myTokens(transactingTokenID).monthlyLowestPrice= platFormObject.myTokens(transactingTokenID).currentBuyPrice;
+                        if platFormObject.myTokens(transactingTokenID).currentBuyPrice < platFormObject.myTokens(transactingTokenID).currentMonthLowestPrice
+                            platFormObject.myTokens(transactingTokenID).currentMonthLowestPrice= platFormObject.myTokens(transactingTokenID).currentBuyPrice;
                         end
                         platFormObject.myTokens(transactingTokenID)
 
@@ -433,15 +434,15 @@ classdef Platform
                         platFormObject.myTokens(transactingTokenID).currentSupply = platFormObject.myTokens(transactingTokenID).currentSupply - deltaSupply;
                         platFormObject.myTokens(transactingTokenID).currentBuyPrice = platFormObject.buyFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
                         platFormObject.myTokens(transactingTokenID).currentSellPrice = platFormObject.sellFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
-                        platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum = platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum + platFormObject.myTokens(transactingTokenID).currentSellPrice;
-                        platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum = platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum + 1;
+                        platFormObject.myTokens(transactingTokenID).currentMonthPriceRunningSum= platFormObject.myTokens(transactingTokenID).currentMonthPriceRunningSum+ platFormObject.myTokens(transactingTokenID).currentSellPrice;
+                        platFormObject.myTokens(transactingTokenID).currentMonthNumTransactionsRunningCount = platFormObject.myTokens(transactingTokenID).currentMonthNumTransactionsRunningCount + 1;
                         platFormObject.myAgents(transactingAgentID).liquidity = platFormObject.myAgents(transactingAgentID).liquidity + costDeltaSupply;
                         platFormObject.myTokens(transactingTokenID)
 
                         % update the transacting agent records
                         if ismember(transactingTokenID, platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs) % if the agent already owns this token -- update the supply
                             tokenHoldingIndex = find(platFormObject.myAgents(transactingAgentID).tokenHoldingsValues == transactingTokenID); % get the index of the owned token and update its supply
-                            platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndex(1)) = platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndex(1)) - deltaSupply;
+                            platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndex) = platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndex) - deltaSupply;
                         end
                         platFormObject.myAgents(transactingAgentID).liquidity = platFormObject.myAgents(transactingAgentID).liquidity + costDeltaSupply;
                         platFormObject.myAgents(transactingAgentID)
@@ -452,15 +453,15 @@ classdef Platform
                 %     eliminate the liquidity and holdings of the dead agents
 
                 for token=1:numel(platFormObject.myTokens)
-                    if platFormObject.myTokens(token).monthlyNumTransactionsRunningSum > 0
-                        platFormObject.myTokens(token).monthlyPastAveragePrices_5years(simulationMonth) =  (platFormObject.myTokens(token).monthlyPriceRunningSum)/(platFormObject.myTokens(token).monthlyNumTransactionsRunningSum);
-                        platFormObject.myTokens(token).monthlyPastHighPrices_5years(simulationMonth) = platFormObject.myTokens(token).monthlyHighestPrice;
-                        platFormObject.myTokens(token).monthlyPastLowPrices_5years(simulationMonth) = platFormObject.myTokens(token).monthlyLowestPrice;
+                    if platFormObject.myTokens(token).currentMonthNumTransactionsRunningCount > 0
+                        platFormObject.myTokens(token).monthlyPastAveragePrices_5years(simulationMonth) =  (platFormObject.myTokens(token).currentMonthPriceRunningSum)/(platFormObject.myTokens(token).currentMonthNumTransactionsRunningCount);
+                        platFormObject.myTokens(token).monthlyPastHighPrices_5years(simulationMonth) = platFormObject.myTokens(token).currentMonthHighestPrice;
+                        platFormObject.myTokens(token).monthlyPastLowPrices_5years(simulationMonth) = platFormObject.myTokens(token).currentMonthLowestPrice;
                     end
-                    platFormObject.myTokens(token).monthlyPriceRunningSum = 0;
-                    platFormObject.myTokens(token).monthlyNumTransactionsRunningSum = 0;
-                    platFormObject.myTokens(token).monthlyHighestPrice = 0;
-                    platFormObject.myTokens(token).monthlyLowestPrice = 0;
+                    platFormObject.myTokens(token).currentMonthPriceRunningSum= 0;
+                    platFormObject.myTokens(token).currentMonthNumTransactionsRunningCount = 0;
+                    platFormObject.myTokens(token).currentMonthHighestPrice= 0;
+                    platFormObject.myTokens(token).currentMonthLowestPrice = 0;
                 end
                 disp(['Simulation month ', num2str(simulationMonth), ' completed...'])
 
@@ -480,17 +481,17 @@ end
 %             platFormObject.myTokens(transactingTokenID).currentSupply = platFormObject.myTokens(transactingTokenID).currentSupply + deltaSupply;
 %             platFormObject.myTokens(transactingTokenID).currentBuyPrice = platFormObject.buyFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
 %             platFormObject.myTokens(transactingTokenID).currentSellPrice = platFormObject.sellFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
-%             platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum = platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum + platFormObject.myTokens(transactingTokenID).currentSellPrice;
-%             platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum = platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum + 1;
+%             platFormObject.myTokens(transactingTokenID).currentMonthPriceRunningSum= platFormObject.myTokens(transactingTokenID).currentMonthPriceRunningSum+ platFormObject.myTokens(transactingTokenID).currentSellPrice;
+%             platFormObject.myTokens(transactingTokenID).currentMonthNumTransactionsRunningCount = platFormObject.myTokens(transactingTokenID).currentMonthNumTransactionsRunningCount + 1;
 %
-%             if platFormObject.myTokens(transactingTokenID).currentBuyPrice > platFormObject.myTokens(transactingTokenID).monthlyHighestPrice % check the current price to update the high/low price of the token
-%                 platFormObject.myTokens(transactingTokenID).monthlyHighestPrice = platFormObject.myTokens(transactingTokenID).currentBuyPrice;
+%             if platFormObject.myTokens(transactingTokenID).currentBuyPrice > platFormObject.myTokens(transactingTokenID).currentMonthHighestPrice% check the current price to update the high/low price of the token
+%                 platFormObject.myTokens(transactingTokenID).currentMonthHighestPrice= platFormObject.myTokens(transactingTokenID).currentBuyPrice;
 %             end
-%             if platFormObject.myTokens(transactingTokenID).monthlyLowestPrice == 0
-%                 platFormObject.myTokens(transactingTokenID).monthlyLowestPrice= platFormObject.myTokens(transactingTokenID).currentBuyPrice;
+%             if platFormObject.myTokens(transactingTokenID).currentMonthLowestPrice == 0
+%                 platFormObject.myTokens(transactingTokenID).currentMonthLowestPrice= platFormObject.myTokens(transactingTokenID).currentBuyPrice;
 %             end
-%             if platFormObject.myTokens(transactingTokenID).currentBuyPrice < platFormObject.myTokens(transactingTokenID).monthlyLowestPrice
-%                 platFormObject.myTokens(transactingTokenID).monthlyLowestPrice= platFormObject.myTokens(transactingTokenID).currentBuyPrice;
+%             if platFormObject.myTokens(transactingTokenID).currentBuyPrice < platFormObject.myTokens(transactingTokenID).currentMonthLowestPrice
+%                 platFormObject.myTokens(transactingTokenID).currentMonthLowestPrice= platFormObject.myTokens(transactingTokenID).currentBuyPrice;
 %             end
 %             platFormObject.myTokens(transactingTokenID)
 %
@@ -516,8 +517,8 @@ end
 %             platFormObject.myTokens(transactingTokenID).currentSupply = platFormObject.myTokens(transactingTokenID).currentSupply - deltaSupply;
 %             platFormObject.myTokens(transactingTokenID).currentBuyPrice = platFormObject.buyFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
 %             platFormObject.myTokens(transactingTokenID).currentSellPrice = platFormObject.sellFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
-%             platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum = platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum + platFormObject.myTokens(transactingTokenID).currentSellPrice;
-%             platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum = platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum + 1;
+%             platFormObject.myTokens(transactingTokenID).currentMonthPriceRunningSum= platFormObject.myTokens(transactingTokenID).currentMonthPriceRunningSum+ platFormObject.myTokens(transactingTokenID).currentSellPrice;
+%             platFormObject.myTokens(transactingTokenID).currentMonthNumTransactionsRunningCount = platFormObject.myTokens(transactingTokenID).currentMonthNumTransactionsRunningCount + 1;
 %             platFormObject.myTokens(transactingTokenID)
 %
 %             %                   transactingToken.currentReserve = transactingToken.currentReserve + costDeltaSupply;

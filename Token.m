@@ -1,46 +1,44 @@
 % this class defines the token parameters
 
 classdef Token
-   properties
-      tokenID int64;
-      ownerAgentID int64;
-      
-%       initialPrice double;
-      currentBuyPrice double;
-      currentSellPrice double;
-      currentSupply double;
-      lifeCycleCurveShape string; % any of the 28 token supply cycles
-      
-      monthlyExpectedFairPrices_5years(1,:) double; %For use by Fundy Agents, to be populated after birth of token
+    properties
+        tokenID int64;
+        ownerAgentID int64;
 
-      monthlyPriceRunningSum double;
-      monthlyNumTransactionsRunningSum int16;
-      monthlyHighestPrice int16;
-      monthlyLowestPrice int16;
-      
-      monthlyPastAveragePrices_5years(1,:) double;
-      monthlyPastHighPrices_5years(1,:) double;
-      monthlyPastLowPrices_5years(1,:) double;
-      monthlyPastPricesStDev_5years(1,:) double;
-      monthlyPastAvgVol_5years(1,:) double;  % The above five indicators are to be used by Charty Agents, to be populated after birth of token until current month
+        %     initialPrice double;
+        currentBuyPrice double;
+        currentSellPrice double;
+        currentSupply double;
+        lifeCycleCurveShape string; % any of the 28 token supply cycles
 
+        monthlyFairPrices_5years(1,:) double; %For use by Fundy Agents, to be populated after birth of token
 
-   end
+        monthlyPastAveragePrices_5years(1,:) double;
+        monthlyPastHighPrices_5years(1,:) double;
+        monthlyPastLowPrices_5years(1,:) double;
+        monthlyPastPricesStDev_5years(1,:) double;
+        monthlyPastAvgVol_5years(1,:) double;  % The above five indicators are to be used by Charty Agents, to be populated after birth of token until current month
 
-   methods
-       function tokenObject = Token(tokenID, agentID, tokenTypes_5Years_Expected_Prices, lifeCycleCurveShapeID)
+        currentMonthPriceRunningSum double;
+        currentMonthNumTransactionsRunningCount int16;
+        currentMonthHighestPrice int16;
+        currentMonthLowestPrice int16;
+    end
+
+    methods
+        function tokenObject = Token(tokenID, agentID, tokenTypes_5Years_Expected_Prices, lifeCycleCurveShapeID)
             if nargin > 0
                 tokenObject.tokenID = tokenID;
                 tokenObject.ownerAgentID = agentID;
-%                 tokenObject.initialPrice = initPrice;
+                %                 tokenObject.initialPrice = initPrice;
                 tokenObject.currentBuyPrice = 0;
                 tokenObject.currentSellPrice = 0;
                 tokenObject.currentSupply = 0;
 
-                tokenObject.monthlyPriceRunningSum = 0;
-                tokenObject.monthlyNumTransactionsRunningSum = 0;
-                tokenObject.monthlyHighestPrice  = 0;
-                tokenObject.monthlyLowestPrice = 0;
+                tokenObject.currentMonthPriceRunningSum= 0;
+                tokenObject.currentMonthNumTransactionsRunningCount = 0;
+                tokenObject.currentMonthHighestPrice = 0;
+                tokenObject.currentMonthLowestPrice = 0;
 
                 tokenObject.monthlyPastAveragePrices_5years = zeros([1,60]);
                 tokenObject.monthlyPastHighPrices_5years = zeros([1,60]);
@@ -54,12 +52,12 @@ classdef Token
                     "Traditional_4x","Boom_classic_4x","Fad_4x","Revival_4x","Extended_Fad_4x","Seasonal_4x","Bust_4x",];
 
                 tokenObject.lifeCycleCurveShape = lifeCycleCurveShapes(lifeCycleCurveShapeID);
-                tokenObject.monthlyExpectedFairPrices_5years = tokenTypes_5Years_Expected_Prices(:,lifeCycleCurveShapeID);
-%                 tokenObject.monthlyExpectedDiscountedPrices_5years = rand(1,60);
-                
+                tokenObject.monthlyFairPrices_5years = tokenTypes_5Years_Expected_Prices(:,lifeCycleCurveShapeID);
+                %                 tokenObject.monthlyExpectedDiscountedPrices_5years = rand(1,60);
+
             end
         end
 
 
-   end
+    end
 end

@@ -7,8 +7,8 @@ classdef Agent
         % holdings contain number of tokens held by this agent as key value pair
         tokenHoldingsIDs(1,:) int64;
         tokenHoldingsValues(1,:) double;
-        riskAppetite int16; % between 0 and 100, used as percentage
-        proActiveness int16; % between 0 and 100, used as percentage
+        riskAppetite double; % between 0 and 100, used as percentage
+        proActiveness double; % between 0 and 100, used as percentage
         intelligenceGap double;
         ownTokenId int64;  % ID of token of this agent, mainly used for agents with purposeCategor = Creator
         dayOfBirth int16;  % Day of joining the platform, both this and dayOfPassing are assumed to be the first of month
@@ -85,6 +85,14 @@ classdef Agent
                     agentObject.dayOfPassing = abs(DoB + plateParams.poor_mu_DayOfPassing + plateParams.poor_sigma_DayOfPassing* randn()); % average age = 1 year
                 end
 
+
+                %Now we have set the strategies of each agent category according the
+                %distribution.
+
+                %Next we set their other parameters according to their strategies
+
+
+
                 if agentObject.strategyType == "fundy"
                     agentObject.riskAppetite = plateParams.risk_mu_fundy + plateParams.risk_sigma_fundy * randn;
                     if agentObject.riskAppetite <=0
@@ -101,15 +109,19 @@ classdef Agent
                         agentObject.proActiveness = 0.9999;
                     end
                     agentObject.intelligenceGap = plateParams.intelligencegap_mu_fundy + plateParams.intelligencegap_sigma_fundy * randn;
+                    
                     agentObject.numTermsForeseen_Fundy = plateParams.numTermsForeseen_mu_fundy + plateParams.numTermsForeseen_sigma_fundy * randn;
                     if agentObject.numTermsForeseen_Fundy <=0
                         agentObject.numTermsForeseen_Fundy = 1;
                     end
+                                       
                     terms = 1:agentObject.numTermsForeseen_Fundy;
+                    terms = double(1.0 * terms);
                     agentObject.monthlyWeights4ExpPrice_Fundy = 1./terms;
-                    agentObject.monthlyWeights4ExpPrice_Fundy = agentObject.monthlyWeights4ExpPrice_Fundy./sum(agentObject.monthlyWeights4ExpPrice_Fundy,2);
+                    agentObject.monthlyWeights4ExpPrice_Fundy = agentObject.monthlyWeights4ExpPrice_Fundy./sum(agentObject.monthlyWeights4ExpPrice_Fundy);
+                    
 
-                elseif agentObject.strategyType == "charty"
+                    elseif agentObject.strategyType == "charty"
                     agentObject.riskAppetite = plateParams.risk_mu_charty + plateParams.risk_sigma_charty * randn;
                     if agentObject.riskAppetite <=0
                         agentObject.riskAppetite = 0.0001;
@@ -129,8 +141,9 @@ classdef Agent
                         agentObject.numHindsightTerms_Charty = 1;
                     end
                     terms = 1:agentObject.numHindsightTerms_Charty;
+                    terms = double(1.0 * terms);
                     agentObject.monthlyWeights4MvngAvg_Charty = 1./terms;
-                    agentObject.monthlyWeights4MvngAvg_Charty = agentObject.monthlyWeights4MvngAvg_Charty./sum(agentObject.monthlyWeights4MvngAvg_Charty,2);
+                    agentObject.monthlyWeights4MvngAvg_Charty = agentObject.monthlyWeights4MvngAvg_Charty./sum(agentObject.monthlyWeights4MvngAvg_Charty);
 
                 elseif agentObject.strategyType == "noisy"
                     agentObject.riskAppetite = plateParams.risk_mu_noisy + plateParams.risk_sigma_noisy * randn;

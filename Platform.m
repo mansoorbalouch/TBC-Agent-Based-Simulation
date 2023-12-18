@@ -66,19 +66,19 @@ classdef Platform
                 platFormObject.buyFunction = @(s) 2* s;
                 platFormObject.sellFunction = @(s) 2* s;
 
-                platFormObject.risk_mu_fundy = 20;
-                platFormObject.risk_sigma_fundy = 3;
-                platFormObject.risk_mu_charty = 40;
-                platFormObject.risk_sigma_charty = 5;
-                platFormObject.risk_mu_noisy = 60;
-                platFormObject.risk_sigma_noisy = 10;
+                platFormObject.risk_mu_fundy = 0.20;
+                platFormObject.risk_sigma_fundy = 0.03;
+                platFormObject.risk_mu_charty = 0.40;
+                platFormObject.risk_sigma_charty = 0.05;
+                platFormObject.risk_mu_noisy = 0.60;
+                platFormObject.risk_sigma_noisy = 0.10;
 
-                platFormObject.activity_mu_fundy = 15;
-                platFormObject.activity_sigma_fundy = 4;
-                platFormObject.activity_mu_charty = 35;
-                platFormObject.activity_sigma_charty = 9;
-                platFormObject.activity_mu_noisy = 50;
-                platFormObject.activity_sigma_noisy =  7;
+                platFormObject.activity_mu_fundy = 0.15;
+                platFormObject.activity_sigma_fundy = 0.04;
+                platFormObject.activity_mu_charty = 0.35;
+                platFormObject.activity_sigma_charty = 0.09;
+                platFormObject.activity_mu_noisy = 0.50;
+                platFormObject.activity_sigma_noisy =  0.07;
 
                 platFormObject.midClass_mu_liquidity =  5000;
                 platFormObject.midClass_sigma_liquidity =  500;
@@ -158,7 +158,7 @@ classdef Platform
                     newAgent = Agent(agentID, myAgentsPurposeCategories(j), term, 0, paramObject);
                     if newAgent.purposeCategory == "Creator"
                         lifeCycleCurveShapeID = randsample([1:28],1);
-                        newToken = Token(tokenID, agentID, 0,0,0, tokenTypes_5Years_Expected_Prices, lifeCycleCurveShapeID);
+                        newToken = Token(tokenID, agentID, tokenTypes_5Years_Expected_Prices, lifeCycleCurveShapeID);
                         myTokens = [myTokens, newToken];
                         tokenID = tokenID + 1;
                     end
@@ -173,7 +173,7 @@ classdef Platform
 
 
         function [myAgents, myTokens] = Run(platFormObject, numSimulationMonths)
-%             numSimulationMinutesPerMonth = 30*24*60;
+            %             numSimulationMinutesPerMonth = 30*24*60;
             numSimulationMinutesPerMonth = 100;
 
             for simulationMonth=1:numSimulationMonths
@@ -183,16 +183,16 @@ classdef Platform
                         aliveAgents = [aliveAgents, platFormObject.myAgents(i)];
                     end
                 end
-%                                 aliveAgents.proActiveness
+                %                                 aliveAgents.proActiveness
                 %     initialize the buy/sell price of all tokens
 
                 for minute=1:numSimulationMinutesPerMonth
                     %    select an alive agent for minute m and perform a transaction
                     transactingAgentID = randsample([aliveAgents.agentID], 1, true, double([aliveAgents.proActiveness]));
-                    transactingAgent = aliveAgents([aliveAgents.agentID] == transactingAgentID)
+                    transactingAgent = aliveAgents([aliveAgents.agentID] == transactingAgentID);
 
                     %    check if the agent has some liquidity or tokenholdlings
-                    if ((transactingAgent.liquidity > 0) || (width(transactingAgent.tokenHoldingsIDs) > 0 )) 
+                    if ((transactingAgent.liquidity > 0) || (width(transactingAgent.tokenHoldingsIDs) > 0 ))
 
                         if (transactingAgent.strategyType == "noisy")
 
@@ -214,93 +214,43 @@ classdef Platform
                                         costDeltaSupply = integral(platFormObject.buyFunction, transactingToken.currentSupply, transactingToken.currentSupply + deltaSupply);
                                     end
 
-                                    %                                     buyTokens(platFormObject, transactingTokenID, transactingAgentID, deltaSupply, costDeltaSupply);
-                                    platFormObject.myTokens(transactingTokenID).currentBuyPrice = platFormObject.buyFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
-                                    platFormObject.myTokens(transactingTokenID).currentSellPrice = platFormObject.sellFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
-                                    platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum = platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum + platFormObject.myTokens(transactingTokenID).currentBuyPrice;
-                                    platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum = platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum + 1;
-                                    platFormObject.myTokens(transactingTokenID)
-
-                                    %                   transactingToken.currentReserve = transactingToken.currentReserve + costDeltaSupply;
-
-                                    platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs = [platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs, transactingTokenID];
-                                    platFormObject.myAgents(transactingAgentID).tokenHoldingsValues = [platFormObject.myAgents(transactingAgentID).tokenHoldingsValues, deltaSupply];
-                                    platFormObject.myAgents(transactingAgentID).liquidity = platFormObject.myAgents(transactingAgentID).liquidity - costDeltaSupply;
-                                    platFormObject.myAgents(transactingAgentID)
-
-                                    disp("transaction successful!")
-                                else % sell
-                                    transactingTokenID = randsample([transactingAgent.tokenHoldingsIDs], 1);
-                                     transactingToken = platFormObject.myTokens(transactingTokenID);
+                                elseif action == "sell" % sell
+                                    if width(platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs) == 1 % check if only one token holdings available with the agent
+                                        transactingTokenID = platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs;
+                                    else
+                                        transactingTokenID = randsample([platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs], 1);
+                                    end
+                                    transactingToken = platFormObject.myTokens(transactingTokenID);
 
                                     tokenHoldingIndex = find([platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs] == transactingTokenID); % get the index of the selected owned token
-                                    currentHoldingsTransactingToken = platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndexs); % get the current supply of the held token to be selled
+                                    currentHoldingsTransactingToken = platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndex(1)); % get the current supply of the held token to be selled
                                     deltaSupply = currentHoldingsTransactingToken*rand;
                                     if deltaSupply==0
-                                        deltaSupply = currentHoldingsTransactingToken * 0.5
+                                        deltaSupply = currentHoldingsTransactingToken * 0.5;
                                     end
 
                                     costDeltaSupply = integral(platFormObject.sellFunction, transactingToken.currentSupply - deltaSupply, transactingToken.currentSupply);
-
-                                    %                                     sellTokens(platFormObject, transactingTokenID, transactingAgentID, deltaSupply, costDeltaSupply);
-                                    platFormObject.myTokens(transactingTokenID).currentSupply = platFormObject.myTokens(transactingTokenID).currentSupply - deltaSupply;
-                                    platFormObject.myTokens(transactingTokenID).currentBuyPrice = platFormObject.buyFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
-                                    platFormObject.myTokens(transactingTokenID).currentSellPrice = platFormObject.sellFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
-                                    platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum = platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum + platFormObject.myTokens(transactingTokenID).currentSellPrice;
-                                    platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum = platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum + 1;
-                                    platFormObject.myTokens(transactingTokenID)
-
-                                    %                   transactingToken.currentReserve = transactingToken.currentReserve + costDeltaSupply;
-
-                                    platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs = [platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs, transactingTokenID];
-                                    platFormObject.myAgents(transactingAgentID).tokenHoldingsValues = [platFormObject.myAgents(transactingAgentID).tokenHoldingsValues, deltaSupply];
-                                    platFormObject.myAgents(transactingAgentID).liquidity = platFormObject.myAgents(transactingAgentID).liquidity + costDeltaSupply;
-                                    platFormObject.myAgents(transactingAgentID)
-
-
-                                    disp("transaction successful!")
                                 end
 
                             elseif (transactingAgent.liquidity <= 0 ) & (width(transactingAgent.tokenHoldingsIDs) > 0 ) % can only sell the tokens held
-                                transactingTokenID = randsample([transactingAgent.tokenHoldingsIDs], 1);
+                                if width(platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs) == 1 % check if only one token holdings available with the agent
+                                    transactingTokenID = platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs;
+                                else
+                                    transactingTokenID = randsample([platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs], 1);
+                                end
                                 transactingToken = platFormObject.myTokens(transactingTokenID);
-                                
-                                tokenHoldingIndex = find(platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs == transactingTokenID); % get the index of the selected owned token
+
+                                tokenHoldingIndex = find([platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs] == transactingTokenID); % get the index of the selected owned token
                                 currentHoldingsTransactingToken = platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndex(1)); % get the current supply of the held token to be selled
-                                deltaSupply = currentHoldingsTransactingToken*rand
+                                deltaSupply = currentHoldingsTransactingToken*rand;
                                 if numel(deltaSupply)==0
-                                    deltaSupply = currentHoldingsTransactingToken * 0.5
+                                    deltaSupply = currentHoldingsTransactingToken * 0.5;
                                 end
 
                                 costDeltaSupply = integral(platFormObject.sellFunction, transactingToken.currentSupply - deltaSupply, transactingToken.currentSupply);
-
-                                % update current token supply and price
-
-                                %                                 sellTokens(platFormObject, transactingTokenID, transactingAgentID, deltaSupply, costDeltaSupply);
-                                platFormObject.myTokens(transactingTokenID).currentSupply = platFormObject.myTokens(transactingTokenID).currentSupply - deltaSupply;
-                                platFormObject.myTokens(transactingTokenID).currentBuyPrice = platFormObject.buyFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
-                                platFormObject.myTokens(transactingTokenID).currentSellPrice = platFormObject.sellFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
-                                platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum = platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum + platFormObject.myTokens(transactingTokenID).currentSellPrice;
-                                platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum = platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum + 1;
-                                platFormObject.myTokens(transactingTokenID)
-
-                                %                   transactingToken.currentReserve = transactingToken.currentReserve + costDeltaSupply;
-
-                                if ismember(transactingTokenID, platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs) % if the agent already owns this token -- update the supply
-                                    tokenHoldingIndex = find(platFormObject.myAgents(transactingAgentID).tokenHoldingsValues == transactingTokenID); % get the index of the owned token and update its supply
-                                    platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndex) = platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndex) - deltaSupply;                                
-%                                     disp("token sold..")
-                                end
-                                    
-                                platFormObject.myAgents(transactingAgentID).liquidity = platFormObject.myAgents(transactingAgentID).liquidity + costDeltaSupply;
-                                platFormObject.myAgents(transactingAgentID)
-
-
-                                disp("transaction successful!")
+                                action = "sell";
 
                             elseif (transactingAgent.liquidity > 0 ) & (width(transactingAgent.tokenHoldingsIDs) == 0 ) % can only buy tokens
-                                %                                 disp("noisy agent transacting...")
-
                                 transactingTokenID = randsample([platFormObject.myTokens.tokenID], 1);
                                 transactingToken = platFormObject.myTokens(transactingTokenID);
 
@@ -313,52 +263,22 @@ classdef Platform
                                     deltaSupply = deltaSupply/2;
                                     costDeltaSupply = integral(platFormObject.buyFunction, transactingToken.currentSupply, transactingToken.currentSupply + deltaSupply);
                                 end
-
-                                %                                 buyTokens(platFormObject, transactingTokenID, transactingAgentID, deltaSupply, costDeltaSupply);
-                                platFormObject.myTokens(transactingTokenID).currentSupply = platFormObject.myTokens(transactingTokenID).currentSupply + deltaSupply;
-                                platFormObject.myTokens(transactingTokenID).currentBuyPrice = platFormObject.buyFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
-                                platFormObject.myTokens(transactingTokenID).currentSellPrice = platFormObject.sellFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
-                                platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum = platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum + platFormObject.myTokens(transactingTokenID).currentSellPrice;
-                                platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum = platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum + 1;
-                                
-                                if platFormObject.myTokens(transactingTokenID).currentBuyPrice > platFormObject.myTokens(transactingTokenID).monthlyHighestPrice % check the current price to update the high/low price of the token
-                                    platFormObject.myTokens(transactingTokenID).monthlyHighestPrice = platFormObject.myTokens(transactingTokenID).currentBuyPrice;
-                                end
-                                if platFormObject.myTokens(transactingTokenID).monthlyLowestPrice == 0
-                                    platFormObject.myTokens(transactingTokenID).monthlyLowestPrice= platFormObject.myTokens(transactingTokenID).currentBuyPrice;
-                                end
-                                if platFormObject.myTokens(transactingTokenID).currentBuyPrice < platFormObject.myTokens(transactingTokenID).monthlyLowestPrice
-                                    platFormObject.myTokens(transactingTokenID).monthlyLowestPrice= platFormObject.myTokens(transactingTokenID).currentBuyPrice;
-                                end
-                                platFormObject.myTokens(transactingTokenID)
-
-                                %                   transactingToken.currentReserve = transactingToken.currentReserve + costDeltaSupply;
-                                if ismember(transactingTokenID, platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs) % if the agent already owns this token -- update the supply
-                                    tokenHoldingIndex = find(platFormObject.myAgents(transactingAgentID).tokenHoldingsValues == transactingTokenID); % get the index of the owned token and update its supply
-                                    platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndex) = platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndex) + deltaSupply;                                
-                                else % add new token to the agent's token list
-                                    platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs = [platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs, transactingTokenID];
-                                    platFormObject.myAgents(transactingAgentID).tokenHoldingsValues = [platFormObject.myAgents(transactingAgentID).tokenHoldingsValues, deltaSupply];
-                                end
-                                platFormObject.myAgents(transactingAgentID).liquidity = platFormObject.myAgents(transactingAgentID).liquidity - costDeltaSupply;
-                                platFormObject.myAgents(transactingAgentID)
-
-                                disp("transaction successful!")
+                                action = "buy";
 
                             end
 
 
                             %   perform transaction and update the token supply and price
 
-                        elseif (transactingAgent.strategyType == "fundy")
+                        elseif transactingAgent.strategyType == "fundy"
 
                             %   compute the fundamental price of all available tokens and the choose
                             %   token with highest expected price for buy and lowest expected price for sell
                             tokensExpectedPrices = [];
 
                             for token=1:numel(platFormObject.myTokens) % compute the expected prices of all tokens
-                                syms W(k) FP(k) 
-%                                 sym k;
+                                syms W(k) FP(k)
+                                %                                 sym k;
                                 f = W(k)*FP(k) * (1-platFormObject.myAgents(transactingAgentID).intelligenceGap); % weights * fair prices * (1 - intelligence gap)
 
                                 W = platFormObject.myAgents(transactingAgentID).monthlyWeights4ExpPrice_Fundy(1:platFormObject.myAgents(transactingAgentID).numTermsForeseen_Fundy);
@@ -366,192 +286,100 @@ classdef Platform
                                 exp_price = symsum(f,k,1,platFormObject.myAgents(transactingAgentID).numTermsForeseen_Fundy);
                                 tokensExpectedPrices(token) = round(sum([subs(exp_price, {'W', 'FP'}, {W, FP})]),2);
                             end
-%                             tokensExpectedPrices
+                            %                             tokensExpectedPrices
 
                             tokensPriceGaps = tokensExpectedPrices - [platFormObject.myTokens.currentBuyPrice]; % price gap = token expected price - token current price (+ve gap represents increasing price and vice versa)
-                            
+
                             if (width(platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs) > 0)  & (platFormObject.myAgents(transactingAgentID).liquidity > 0) % transacting agent has both token holdings and liquidity
                                 platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs;
                                 tokensPriceGaps_HeldTokens = [];
                                 for token=1:numel(platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs) % get the ids and price gap of the already held tokens
-                                    tokensPriceGaps_HeldTokens = [tokensPriceGaps_HeldTokens, tokensPriceGaps(platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs(token))]; % 
+                                    tokensPriceGaps_HeldTokens = [tokensPriceGaps_HeldTokens, tokensPriceGaps(platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs(token))]; %
                                 end
-%                                 tokensPriceGaps_HeldTokens
+                                %                                 tokensPriceGaps_HeldTokens
                                 minPriceGap_HeldTokens = min(tokensPriceGaps_HeldTokens);
                                 maxPriceGap_AllTokens = max(tokensPriceGaps);
-    
+
                                 if abs(maxPriceGap_AllTokens) > abs(minPriceGap_HeldTokens) % buy the token with max price gap
                                     transactingTokenID = find([tokensPriceGaps] == maxPriceGap_AllTokens);
                                     if numel(transactingTokenID)>1 % if multiple tokens have highest price gaps, then choose one at random
-                                        transactingTokenID = randsample([transactingTokenID],1); 
+                                        transactingTokenID = randsample([transactingTokenID],1);
                                     end
                                     transactingToken = platFormObject.myTokens(transactingTokenID);
-    
-                                     %   choose how much (deltaSupply) to buy/sell based on liquidity or token holdings and risk averseness
+
+                                    %   choose how much (deltaSupply) to buy/sell based on liquidity or token holdings and risk averseness
                                     deltaSupply = rand(1);
-    
+
                                     costDeltaSupply = integral(platFormObject.buyFunction, transactingToken.currentSupply, transactingToken.currentSupply + deltaSupply);
 
                                     while costDeltaSupply > platFormObject.myAgents(transactingAgentID).liquidity % check if the cost is within the available liquidity
                                         deltaSupply = deltaSupply/2;
                                         costDeltaSupply = integral(platFormObject.buyFunction, transactingToken.currentSupply, transactingToken.currentSupply + deltaSupply);
                                     end
-    
-%                                     buyTokens(platFormObject, transactingTokenID, transactingAgentID, deltaSupply, costDeltaSupply);
-                                    platFormObject.myTokens(transactingTokenID).currentSupply = platFormObject.myTokens(transactingTokenID).currentSupply + deltaSupply;
-                                    platFormObject.myTokens(transactingTokenID).currentBuyPrice = platFormObject.buyFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
-                                    platFormObject.myTokens(transactingTokenID).currentSellPrice = platFormObject.sellFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
-                                    platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum = platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum + platFormObject.myTokens(transactingTokenID).currentSellPrice;
-                                    platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum = platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum + 1;
-                                    
-                                    if platFormObject.myTokens(transactingTokenID).currentBuyPrice > platFormObject.myTokens(transactingTokenID).monthlyHighestPrice % check the current price to update the high/low price of the token
-                                        platFormObject.myTokens(transactingTokenID).monthlyHighestPrice = platFormObject.myTokens(transactingTokenID).currentBuyPrice;
-                                    end
-                                    if platFormObject.myTokens(transactingTokenID).monthlyLowestPrice == 0
-                                        platFormObject.myTokens(transactingTokenID).monthlyLowestPrice= platFormObject.myTokens(transactingTokenID).currentBuyPrice;
-                                    end
-                                    if platFormObject.myTokens(transactingTokenID).currentBuyPrice < platFormObject.myTokens(transactingTokenID).monthlyLowestPrice
-                                        platFormObject.myTokens(transactingTokenID).monthlyLowestPrice= platFormObject.myTokens(transactingTokenID).currentBuyPrice;
-                                    end
-                                    platFormObject.myTokens(transactingTokenID)
-    
-                                    %                   transactingToken.currentReserve = transactingToken.currentReserve + costDeltaSupply;
-                                    if ismember(transactingTokenID, platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs) % if the agent already owns this token -- update the supply
-                                        tokenHoldingIndex = find(platFormObject.myAgents(transactingAgentID).tokenHoldingsValues == transactingTokenID); % get the index of the owned token and update its supply
-                                        platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndex) = platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndex) + deltaSupply;                                
-                                    else % add new token to the agent's token list
-                                        platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs = [platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs, transactingTokenID];
-                                        platFormObject.myAgents(transactingAgentID).tokenHoldingsValues = [platFormObject.myAgents(transactingAgentID).tokenHoldingsValues, deltaSupply];
-                                    end
-                                    platFormObject.myAgents(transactingAgentID).liquidity = platFormObject.myAgents(transactingAgentID).liquidity - costDeltaSupply;
-                                    platFormObject.myAgents(transactingAgentID)
+                                    action = "buy";
 
-                                    
-    
+
                                 elseif abs(maxPriceGap_AllTokens) < abs(minPriceGap_HeldTokens)  % sell held token with min price gap
                                     transactingTokenID = find([tokensPriceGaps] == minPriceGap_HeldTokens);
                                     if numel(transactingTokenID)>1 % if multiple tokens have highest price gaps, then choose one at random
-                                        transactingTokenID = randsample([transactingTokenID],1); 
+                                        transactingTokenID = randsample([transactingTokenID],1);
                                     end
                                     transactingToken = platFormObject.myTokens(transactingTokenID);
-    
+
                                     tokenHoldingIndex = find(platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs == transactingTokenID); % get the index of the selected owned token
                                     currentHoldingsTransactingToken = platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndex(1)); % get the current supply of the held token to be selled
-                                    deltaSupply = currentHoldingsTransactingToken*rand
+                                    deltaSupply = currentHoldingsTransactingToken*rand;
                                     if deltaSupply==0
-                                        deltaSupply = currentHoldingsTransactingToken * 0.5
+                                        deltaSupply = currentHoldingsTransactingToken * 0.5;
                                     end
-    
-                                    costDeltaSupply = integral(platFormObject.sellFunction, transactingToken.currentSupply - deltaSupply, transactingToken.currentSupply);
-    
-                                    % update current token supply and price
-    
-%                                     sellTokens(platFormObject, transactingTokenID, transactingAgentID, deltaSupply, costDeltaSupply);
-                                    platFormObject.myTokens(transactingTokenID).currentSupply = platFormObject.myTokens(transactingTokenID).currentSupply - deltaSupply;
-                                    platFormObject.myTokens(transactingTokenID).currentBuyPrice = platFormObject.buyFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
-                                    platFormObject.myTokens(transactingTokenID).currentSellPrice = platFormObject.sellFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
-                                    platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum = platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum + platFormObject.myTokens(transactingTokenID).currentSellPrice;
-                                    platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum = platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum + 1;
-                                    platFormObject.myTokens(transactingTokenID)
-    
-                                    %                   transactingToken.currentReserve = transactingToken.currentReserve + costDeltaSupply;
-    
-                                    if ismember(transactingTokenID, platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs) % agent already owns this token -- update its supply
-                                        tokenHoldingIndex = find(platFormObject.myAgents(transactingAgentID).tokenHoldingsValues == transactingTokenID); % get the index of the owned token and update its supply
-                                        platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndex) = platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndex) - deltaSupply;                                
-                                        disp("token sold..")
-                                    end
-                                        
-                                    platFormObject.myAgents(transactingAgentID).liquidity = platFormObject.myAgents(transactingAgentID).liquidity + costDeltaSupply;
-                                    platFormObject.myAgents(transactingAgentID)
 
-    
+                                    costDeltaSupply = integral(platFormObject.sellFunction, transactingToken.currentSupply - deltaSupply, transactingToken.currentSupply);
+
+                                    action = "sell";
+
                                 end
                             elseif (platFormObject.myAgents(transactingAgentID).liquidity > 0) & (width(platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs) == 0) % agent has liquidity only --- can only buy tokens
-                                maxPriceGap_AllTokens = max(tokensPriceGaps)
-                                transactingTokenID = find([tokensPriceGaps] == maxPriceGap_AllTokens)
-                                if width(transactingTokenID)>1 % if multiple tokens have highest price gaps, then choose one at random
-                                    transactingTokenID = randsample([transactingTokenID],1); 
-                                end
-                                transactingToken = platFormObject.myTokens(transactingTokenID);
+                                maxPriceGap_AllTokens = max(tokensPriceGaps);
+                                if maxPriceGap_AllTokens > 0 % check if no token is worth buying
+                                    transactingTokenID = find([tokensPriceGaps] == maxPriceGap_AllTokens);
+                                    if width(transactingTokenID)>1 % if multiple tokens have highest price gaps, then choose one at random
+                                        transactingTokenID = randsample([transactingTokenID],1);
+                                    end
+                                    transactingToken = platFormObject.myTokens(transactingTokenID);
 
-                                 %   choose how much (deltaSupply) to buy/sell based on liquidity or token holdings and risk averseness
-                                deltaSupply = rand(1);
+                                    %   choose how much (deltaSupply) to buy/sell based on liquidity or token holdings and risk averseness
+                                    deltaSupply = rand(1);
 
-                                costDeltaSupply = integral(platFormObject.buyFunction, transactingToken.currentSupply, transactingToken.currentSupply + deltaSupply);
-
-                                while costDeltaSupply > platFormObject.myAgents(transactingAgentID).liquidity % check if the cost is within the available liquidity
-                                    deltaSupply = deltaSupply/2;
                                     costDeltaSupply = integral(platFormObject.buyFunction, transactingToken.currentSupply, transactingToken.currentSupply + deltaSupply);
-                                end
 
-%                                 buyTokens(platFormObject, transactingTokenID, transactingAgentID, deltaSupply, costDeltaSupply);
-                                platFormObject.myTokens(transactingTokenID).currentSupply = platFormObject.myTokens(transactingTokenID).currentSupply + deltaSupply;
-                                platFormObject.myTokens(transactingTokenID).currentBuyPrice = platFormObject.buyFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
-                                platFormObject.myTokens(transactingTokenID).currentSellPrice = platFormObject.sellFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
-                                platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum = platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum + platFormObject.myTokens(transactingTokenID).currentSellPrice;
-                                platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum = platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum + 1;
-                                
-                                if platFormObject.myTokens(transactingTokenID).currentBuyPrice > platFormObject.myTokens(transactingTokenID).monthlyHighestPrice % check the current price to update the high/low price of the token
-                                    platFormObject.myTokens(transactingTokenID).monthlyHighestPrice = platFormObject.myTokens(transactingTokenID).currentBuyPrice;
-                                end
-                                if platFormObject.myTokens(transactingTokenID).monthlyLowestPrice == 0
-                                    platFormObject.myTokens(transactingTokenID).monthlyLowestPrice= platFormObject.myTokens(transactingTokenID).currentBuyPrice;
-                                end
-                                if platFormObject.myTokens(transactingTokenID).currentBuyPrice < platFormObject.myTokens(transactingTokenID).monthlyLowestPrice
-                                    platFormObject.myTokens(transactingTokenID).monthlyLowestPrice= platFormObject.myTokens(transactingTokenID).currentBuyPrice;
-                                end
-                                platFormObject.myTokens(transactingTokenID)
+                                    while costDeltaSupply > platFormObject.myAgents(transactingAgentID).liquidity % check if the cost is within the available liquidity
+                                        deltaSupply = deltaSupply/2;
+                                        costDeltaSupply = integral(platFormObject.buyFunction, transactingToken.currentSupply, transactingToken.currentSupply + deltaSupply);
+                                    end
 
-                                %                   transactingToken.currentReserve = transactingToken.currentReserve + costDeltaSupply;
-                                if ismember(transactingTokenID, platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs) % if the agent already owns this token -- update the supply
-                                    tokenHoldingIndex = find(platFormObject.myAgents(transactingAgentID).tokenHoldingsValues == transactingTokenID); % get the index of the owned token and update its supply
-                                    platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndex) = platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndex) + deltaSupply;                                
-                                else % add new token to the agent's token list
-                                    platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs = [platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs, transactingTokenID];
-                                    platFormObject.myAgents(transactingAgentID).tokenHoldingsValues = [platFormObject.myAgents(transactingAgentID).tokenHoldingsValues, deltaSupply];
+                                    action = "buy";
+
+                                    %                                 else
+                                    %                                     disp("Skip this transaction step...")
                                 end
-                                platFormObject.myAgents(transactingAgentID).liquidity = platFormObject.myAgents(transactingAgentID).liquidity - costDeltaSupply;
-                                platFormObject.myAgents(transactingAgentID)
 
                             elseif (width(platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs) > 0) & (platFormObject.myAgents(transactingAgentID).liquidity <= 0) % agent owns tokens only -- sell tokens
 
                                 transactingTokenID = find([tokensPriceGaps] == minPriceGap_HeldTokens);
                                 if numel(transactingTokenID)>1 % if multiple tokens have highest price gaps, then choose one at random
-                                    transactingTokenID = randsample([transactingTokenID],1); 
+                                    transactingTokenID = randsample([transactingTokenID],1);
                                 end
                                 transactingToken = platFormObject.myTokens(transactingTokenID);
 
                                 tokenHoldingIndex = find(platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs == transactingTokenID); % get the index of the selected owned token
                                 currentHoldingsTransactingToken = platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndex); % get the current supply of the held token to be selled
-                                deltaSupply = currentHoldingsTransactingToken*rand
+                                deltaSupply = currentHoldingsTransactingToken*rand;
                                 if numel(deltaSupply)==0
-                                    deltaSupply = currentHoldingsTransactingToken * 0.5
+                                    deltaSupply = currentHoldingsTransactingToken * 0.5;
                                 end
 
                                 costDeltaSupply = integral(platFormObject.sellFunction, transactingToken.currentSupply - deltaSupply, transactingToken.currentSupply);
-
-                                % update current token supply and price
-
-%                                     sellTokens(platFormObject, transactingTokenID, transactingAgentID, deltaSupply, costDeltaSupply);
-                                platFormObject.myTokens(transactingTokenID).currentSupply = platFormObject.myTokens(transactingTokenID).currentSupply - deltaSupply;
-                                platFormObject.myTokens(transactingTokenID).currentBuyPrice = platFormObject.buyFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
-                                platFormObject.myTokens(transactingTokenID).currentSellPrice = platFormObject.sellFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
-                                platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum = platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum + platFormObject.myTokens(transactingTokenID).currentSellPrice;
-                                platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum = platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum + 1;
-                                platFormObject.myAgents(transactingAgentID).liquidity = platFormObject.myAgents(transactingAgentID).liquidity + costDeltaSupply;
-                                platFormObject.myTokens(transactingTokenID)
-
-                                %                   transactingToken.currentReserve = transactingToken.currentReserve + costDeltaSupply;
-
-                                if ismember(transactingTokenID, platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs) % if the agent already owns this token -- update the supply
-                                    tokenHoldingIndex = find(platFormObject.myAgents(transactingAgentID).tokenHoldingsValues == transactingTokenID); % get the index of the owned token and update its supply
-                                    platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndex(1)) = platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndex(1)) - deltaSupply;                                
-                                    disp("token sold..")
-                                end
-                                platFormObject.myAgents(transactingAgentID).liquidity = platFormObject.myAgents(transactingAgentID).liquidity + costDeltaSupply;
-                                platFormObject.myAgents(transactingAgentID)
-
+                                action = "sell";
 
                             end
 
@@ -564,19 +392,61 @@ classdef Platform
                             %   tokens and select the token with highest est-price for buy and lowest est-price for sell
                         end
 
-                        %    compute and update the buy and sell price of the traded token
-                        %   currentBuyPrice = buyFunc(currentSupply);
-                        %   currentSellPrice = sellFunc(currentSupply);
-
-
                     else
                         %    skip this simulation step --- no transaction
                         disp("Agent has no liquidity or token holdings, skip this simulation step..")
 
                     end
 
-                end
+                    if action == "buy"
+                        % update the transacting token records
+                        platFormObject.myTokens(transactingTokenID).currentSupply = platFormObject.myTokens(transactingTokenID).currentSupply + deltaSupply;
+                        platFormObject.myTokens(transactingTokenID).currentBuyPrice = platFormObject.buyFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
+                        platFormObject.myTokens(transactingTokenID).currentSellPrice = platFormObject.sellFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
+                        platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum = platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum + platFormObject.myTokens(transactingTokenID).currentSellPrice;
+                        platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum = platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum + 1;
 
+                        if platFormObject.myTokens(transactingTokenID).currentBuyPrice > platFormObject.myTokens(transactingTokenID).monthlyHighestPrice % check the current price to update the high/low price of the token
+                            platFormObject.myTokens(transactingTokenID).monthlyHighestPrice = platFormObject.myTokens(transactingTokenID).currentBuyPrice;
+                        end
+                        if platFormObject.myTokens(transactingTokenID).monthlyLowestPrice == 0
+                            platFormObject.myTokens(transactingTokenID).monthlyLowestPrice= platFormObject.myTokens(transactingTokenID).currentBuyPrice;
+                        end
+                        if platFormObject.myTokens(transactingTokenID).currentBuyPrice < platFormObject.myTokens(transactingTokenID).monthlyLowestPrice
+                            platFormObject.myTokens(transactingTokenID).monthlyLowestPrice= platFormObject.myTokens(transactingTokenID).currentBuyPrice;
+                        end
+                        platFormObject.myTokens(transactingTokenID)
+
+                        % update the transacting agent records
+                        if ismember(transactingTokenID, platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs) % if the agent already owns this token -- update the supply
+                            tokenHoldingIndex = find(platFormObject.myAgents(transactingAgentID).tokenHoldingsValues == transactingTokenID); % get the index of the owned token and update its supply
+                            platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndex) = platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndex) + deltaSupply;
+                        else % add new token to the agent's token list
+                            platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs = [platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs, transactingTokenID];
+                            platFormObject.myAgents(transactingAgentID).tokenHoldingsValues = [platFormObject.myAgents(transactingAgentID).tokenHoldingsValues, deltaSupply];
+                        end
+                        platFormObject.myAgents(transactingAgentID).liquidity = platFormObject.myAgents(transactingAgentID).liquidity - costDeltaSupply;
+                        platFormObject.myAgents(transactingAgentID)
+
+                    elseif action == "sell"
+                        % update the transacting token records
+                        platFormObject.myTokens(transactingTokenID).currentSupply = platFormObject.myTokens(transactingTokenID).currentSupply - deltaSupply;
+                        platFormObject.myTokens(transactingTokenID).currentBuyPrice = platFormObject.buyFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
+                        platFormObject.myTokens(transactingTokenID).currentSellPrice = platFormObject.sellFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
+                        platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum = platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum + platFormObject.myTokens(transactingTokenID).currentSellPrice;
+                        platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum = platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum + 1;
+                        platFormObject.myAgents(transactingAgentID).liquidity = platFormObject.myAgents(transactingAgentID).liquidity + costDeltaSupply;
+                        platFormObject.myTokens(transactingTokenID)
+
+                        % update the transacting agent records
+                        if ismember(transactingTokenID, platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs) % if the agent already owns this token -- update the supply
+                            tokenHoldingIndex = find(platFormObject.myAgents(transactingAgentID).tokenHoldingsValues == transactingTokenID); % get the index of the owned token and update its supply
+                            platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndex(1)) = platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndex(1)) - deltaSupply;
+                        end
+                        platFormObject.myAgents(transactingAgentID).liquidity = platFormObject.myAgents(transactingAgentID).liquidity + costDeltaSupply;
+                        platFormObject.myAgents(transactingAgentID)
+                    end
+                end
 
                 %     update the monthly record (moving avg, min-max price, etc.) of all tokens
                 %     eliminate the liquidity and holdings of the dead agents
@@ -600,58 +470,61 @@ classdef Platform
 
         end
 
-        function buyTokens(platFormObject, transactingTokenID, transactingAgentID, deltaSupply, costDeltaSupply)
-            % update current token supply, price and token holdings of the transaction agent
-
-            platFormObject.myTokens(transactingTokenID).currentSupply = platFormObject.myTokens(transactingTokenID).currentSupply + deltaSupply;
-            platFormObject.myTokens(transactingTokenID).currentBuyPrice = platFormObject.buyFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
-            platFormObject.myTokens(transactingTokenID).currentSellPrice = platFormObject.sellFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
-            platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum = platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum + platFormObject.myTokens(transactingTokenID).currentSellPrice;
-            platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum = platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum + 1;
-            
-            if platFormObject.myTokens(transactingTokenID).currentBuyPrice > platFormObject.myTokens(transactingTokenID).monthlyHighestPrice % check the current price to update the high/low price of the token
-                platFormObject.myTokens(transactingTokenID).monthlyHighestPrice = platFormObject.myTokens(transactingTokenID).currentBuyPrice;
-            end
-            if platFormObject.myTokens(transactingTokenID).monthlyLowestPrice == 0
-                platFormObject.myTokens(transactingTokenID).monthlyLowestPrice= platFormObject.myTokens(transactingTokenID).currentBuyPrice;
-            end
-            if platFormObject.myTokens(transactingTokenID).currentBuyPrice < platFormObject.myTokens(transactingTokenID).monthlyLowestPrice
-                platFormObject.myTokens(transactingTokenID).monthlyLowestPrice= platFormObject.myTokens(transactingTokenID).currentBuyPrice;
-            end
-            platFormObject.myTokens(transactingTokenID)
-
-            %                   transactingToken.currentReserve = transactingToken.currentReserve + costDeltaSupply;
-            if ismember(transactingTokenID, platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs) % if the agent already owns this token -- update the supply
-                tokenHoldingIndex = find(platFormObject.myAgents(transactingAgentID).tokenHoldingsValues == transactingTokenID); % get the index of the owned token and update its supply
-                platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndex) = platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndex) + deltaSupply;                                
-            else % add new token to the agent's token list
-                platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs = [platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs, transactingTokenID];
-                platFormObject.myAgents(transactingAgentID).tokenHoldingsValues = [platFormObject.myAgents(transactingAgentID).tokenHoldingsValues, deltaSupply];
-            end
-            platFormObject.myAgents(transactingAgentID).liquidity = platFormObject.myAgents(transactingAgentID).liquidity - costDeltaSupply;
-            platFormObject.myAgents(transactingAgentID)
-
-        end
-
-        function sellTokens(platFormObject, transactingTokenID, transactingAgentID, deltaSupply, costDeltaSupply)
-            % update current token supply, price and token holdings of the transaction agent
-
-            platFormObject.myTokens(transactingTokenID).currentSupply = platFormObject.myTokens(transactingTokenID).currentSupply - deltaSupply;
-            platFormObject.myTokens(transactingTokenID).currentBuyPrice = platFormObject.buyFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
-            platFormObject.myTokens(transactingTokenID).currentSellPrice = platFormObject.sellFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
-            platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum = platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum + platFormObject.myTokens(transactingTokenID).currentSellPrice;
-            platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum = platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum + 1;
-            platFormObject.myTokens(transactingTokenID)
-
-            %                   transactingToken.currentReserve = transactingToken.currentReserve + costDeltaSupply;
-
-            platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs = [platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs, transactingTokenID];
-            platFormObject.myAgents(transactingAgentID).tokenHoldingsValues = [platFormObject.myAgents(transactingAgentID).tokenHoldingsValues, deltaSupply];
-            platFormObject.myAgents(transactingAgentID).liquidity = platFormObject.myAgents(transactingAgentID).liquidity + costDeltaSupply;
-            platFormObject.myAgents(transactingAgentID)
-
-        end
-
-
     end
 end
+
+
+%         function [myAgents, myTokens] = buyTokens(platFormObject, transactingTokenID, transactingAgentID, deltaSupply, costDeltaSupply)
+%             % update current token supply, price and token holdings of the transaction agent
+%
+%             platFormObject.myTokens(transactingTokenID).currentSupply = platFormObject.myTokens(transactingTokenID).currentSupply + deltaSupply;
+%             platFormObject.myTokens(transactingTokenID).currentBuyPrice = platFormObject.buyFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
+%             platFormObject.myTokens(transactingTokenID).currentSellPrice = platFormObject.sellFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
+%             platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum = platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum + platFormObject.myTokens(transactingTokenID).currentSellPrice;
+%             platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum = platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum + 1;
+%
+%             if platFormObject.myTokens(transactingTokenID).currentBuyPrice > platFormObject.myTokens(transactingTokenID).monthlyHighestPrice % check the current price to update the high/low price of the token
+%                 platFormObject.myTokens(transactingTokenID).monthlyHighestPrice = platFormObject.myTokens(transactingTokenID).currentBuyPrice;
+%             end
+%             if platFormObject.myTokens(transactingTokenID).monthlyLowestPrice == 0
+%                 platFormObject.myTokens(transactingTokenID).monthlyLowestPrice= platFormObject.myTokens(transactingTokenID).currentBuyPrice;
+%             end
+%             if platFormObject.myTokens(transactingTokenID).currentBuyPrice < platFormObject.myTokens(transactingTokenID).monthlyLowestPrice
+%                 platFormObject.myTokens(transactingTokenID).monthlyLowestPrice= platFormObject.myTokens(transactingTokenID).currentBuyPrice;
+%             end
+%             platFormObject.myTokens(transactingTokenID)
+%
+%             %                   transactingToken.currentReserve = transactingToken.currentReserve + costDeltaSupply;
+%             if ismember(transactingTokenID, platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs) % if the agent already owns this token -- update the supply
+%                 tokenHoldingIndex = find(platFormObject.myAgents(transactingAgentID).tokenHoldingsValues == transactingTokenID); % get the index of the owned token and update its supply
+%                 platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndex) = platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndex) + deltaSupply;
+%             else % add new token to the agent's token list
+%                 platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs = [platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs, transactingTokenID];
+%                 platFormObject.myAgents(transactingAgentID).tokenHoldingsValues = [platFormObject.myAgents(transactingAgentID).tokenHoldingsValues, deltaSupply];
+%             end
+%             platFormObject.myAgents(transactingAgentID).liquidity = platFormObject.myAgents(transactingAgentID).liquidity - costDeltaSupply;
+%             platFormObject.myAgents(transactingAgentID)
+%
+%             myAgents = platFormObject.myAgents;
+%             myTokens = platFormObject.myTokens;
+%
+%         end
+%
+%         function sellTokens(platFormObject, transactingTokenID, transactingAgentID, deltaSupply, costDeltaSupply)
+%             % update current token supply, price and token holdings of the transaction agent
+%
+%             platFormObject.myTokens(transactingTokenID).currentSupply = platFormObject.myTokens(transactingTokenID).currentSupply - deltaSupply;
+%             platFormObject.myTokens(transactingTokenID).currentBuyPrice = platFormObject.buyFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
+%             platFormObject.myTokens(transactingTokenID).currentSellPrice = platFormObject.sellFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
+%             platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum = platFormObject.myTokens(transactingTokenID).monthlyPriceRunningSum + platFormObject.myTokens(transactingTokenID).currentSellPrice;
+%             platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum = platFormObject.myTokens(transactingTokenID).monthlyNumTransactionsRunningSum + 1;
+%             platFormObject.myTokens(transactingTokenID)
+%
+%             %                   transactingToken.currentReserve = transactingToken.currentReserve + costDeltaSupply;
+%
+%             platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs = [platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs, transactingTokenID];
+%             platFormObject.myAgents(transactingAgentID).tokenHoldingsValues = [platFormObject.myAgents(transactingAgentID).tokenHoldingsValues, deltaSupply];
+%             platFormObject.myAgents(transactingAgentID).liquidity = platFormObject.myAgents(transactingAgentID).liquidity + costDeltaSupply;
+%             platFormObject.myAgents(transactingAgentID)
+%
+%         end

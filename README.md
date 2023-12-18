@@ -6,20 +6,16 @@ This repository contains an agent-based simulation of a multi-token economy syst
 ## Project Structure
 ### Classes
 
-- Agent.m: Defines the characteristics, behaviors, and goals of platform participants (agents).
-- Token.m: Represents tokens used within the platform, defining their attributes and interactions.
-- Platform.m: Defines the structure and mechanisms of the platform.
-
-### Simulation Logic
-- createAgent.m: Contains methods for creating agents with specific attributes and behaviors.
-- Run.m: Executes the simulation for a specified number of time steps, capturing agent interactions, decision-making processes, and platform dynamics.
+- [Agent.m:] Defines the characteristics, behaviors, and goals of platform participants (agents).
+- [Token.m:] Represents tokens used within the platform, defining their attributes and interactions.
+- [Platform.m:] Defines the structure and mechanisms of the platform, creates agents with specific attributes and behaviors, and executes the simulation for a specified number of time steps, capturing agent interactions, decision-making processes, and platform dynamics.
 
 
 ### Simulation Objectives
 The simulation aims to:
 
 - Model realistic agent behaviors and decision-making processes within a multi-token economy.
-- Analyze the emergent properties of the platform, including price discovery, supply and demand trends, volatility, and arbitrage opportunities resulting from agent interactions.
+- Analyze the properties of the platform, including price discovery, supply and demand trends, volatility, and arbitrage opportunities resulting from agent interactions.
 - Investigate the impact of various bonding curve shapes, parameters, and agent behaviors on platform dynamics.
 
 

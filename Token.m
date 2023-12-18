@@ -28,14 +28,14 @@ classdef Token
    end
 
    methods
-       function tokenObject = Token(tokenID, agentID, currentBuyPrice, currentSellPrice, currentSupply,tokenTypes_5Years_Expected_Prices, lifeCycleCurveShapeID)
+       function tokenObject = Token(tokenID, agentID, tokenTypes_5Years_Expected_Prices, lifeCycleCurveShapeID)
             if nargin > 0
                 tokenObject.tokenID = tokenID;
                 tokenObject.ownerAgentID = agentID;
 %                 tokenObject.initialPrice = initPrice;
-                tokenObject.currentBuyPrice = currentBuyPrice;
-                tokenObject.currentSellPrice = currentSellPrice;
-                tokenObject.currentSupply = currentSupply;
+                tokenObject.currentBuyPrice = 0;
+                tokenObject.currentSellPrice = 0;
+                tokenObject.currentSupply = 0;
 
                 tokenObject.monthlyPriceRunningSum = 0;
                 tokenObject.monthlyNumTransactionsRunningSum = 0;

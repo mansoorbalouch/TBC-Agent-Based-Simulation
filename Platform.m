@@ -175,6 +175,8 @@ classdef Platform
         function [myAgents, myTokens] = Run(platFormObject, numSimulationMonths)
             %             numSimulationMinutesPerMonth = 30*24*60;
             numSimulationMinutesPerMonth = 100;
+            transactionsLog = table('Size', [0, 9], 'VariableTypes', {'int16','double', 'int16', 'double', 'double', 'double', 'double', 'string', 'int16'}, ...
+                'VariableNames', {'AgentID', 'AgentLiquidity', 'TokenID', 'DeltaSupply', 'TokenCurrentBuyPrice', 'TokenCurrentSellPrice', 'TokenCurrentSupply', 'TransactionType', 'SimulationMonth'});
 
             for simulationMonth=1:numSimulationMonths
                 aliveAgents = [];
@@ -288,9 +290,9 @@ classdef Platform
                             allTokensExpectedPrices = [];
                             for token=1:numel(platFormObject.myTokens) % compute the expected prices of all tokens
 
-                                weights = platFormObject.myAgents(transactingAgentID).monthlyWeights4MvngAvg_Charty;
+                                hindsightWeights = platFormObject.myAgents(transactingAgentID).monthlyWeights4MvngAvg_Charty;
                                 averageMonthlyPrices = platFormObject.myTokens(token).monthlyPastAveragePrices_5years(1:platFormObject.myAgents(transactingAgentID).numHindsightTerms_Charty);
-                                weightedMonthlyPrices = sum(weights.*averageMonthlyPrices);
+                                weightedMonthlyPrices = sum(hindsightWeights.*averageMonthlyPrices);
 
                                 allTokensExpectedPrices(token) = (platFormObject.myTokens(token).currentBuyPrice + weightedMonthlyPrices)/2;
                             end
@@ -368,7 +370,6 @@ classdef Platform
                         if platFormObject.myTokens(transactingTokenID).currentBuyPrice < platFormObject.myTokens(transactingTokenID).currentMonthLowestPrice
                             platFormObject.myTokens(transactingTokenID).currentMonthLowestPrice= platFormObject.myTokens(transactingTokenID).currentBuyPrice;
                         end
-%                         platFormObject.myTokens(transactingTokenID)
 
                         % update the transacting agent records
                         if ismember(transactingTokenID, platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs) % if the agent already owns this token -- update the supply
@@ -379,7 +380,12 @@ classdef Platform
                             platFormObject.myAgents(transactingAgentID).tokenHoldingsValues = [platFormObject.myAgents(transactingAgentID).tokenHoldingsValues, deltaSupply];
                         end
                         platFormObject.myAgents(transactingAgentID).liquidity = platFormObject.myAgents(transactingAgentID).liquidity - costDeltaSupply;
-%                         platFormObject.myAgents(transactingAgentID)
+
+                         % add current transaction results to the table
+                        newTransaction = table(platFormObject.myAgents(transactingAgentID).agentID, platFormObject.myAgents(transactingAgentID).liquidity, platFormObject.myTokens(transactingTokenID).tokenID, deltaSupply, ...
+                            platFormObject.myTokens(transactingTokenID).currentBuyPrice, platFormObject.myTokens(transactingTokenID).currentSellPrice, platFormObject.myTokens(transactingTokenID).currentSupply, action, simulationMonth, ...
+                        'VariableNames', {'AgentID', 'AgentLiquidity', 'TokenID', 'DeltaSupply', 'TokenCurrentBuyPrice', 'TokenCurrentSellPrice', 'TokenCurrentSupply', 'TransactionType', 'SimulationMonth'});
+                            transactionsLog = [transactionsLog; newTransaction];
 
                     elseif action == "sell"
 
@@ -409,16 +415,20 @@ classdef Platform
                             platFormObject.myTokens(transactingTokenID).currentMonthLowestPrice= platFormObject.myTokens(transactingTokenID).currentBuyPrice;
                         end
 
-%                         platFormObject.myTokens(transactingTokenID)
-
                         % update the transacting agent records
                         if ismember(transactingTokenID, platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs) % the agent already owns this token -- update the supply
                             tokenHoldingIndex = find(platFormObject.myAgents(transactingAgentID).tokenHoldingsValues == transactingTokenID); % get the index of the owned token and update its supply
                             platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndex) = platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndex) - deltaSupply;
                         end
                         platFormObject.myAgents(transactingAgentID).liquidity = platFormObject.myAgents(transactingAgentID).liquidity + costDeltaSupply;
-%                         platFormObject.myAgents(transactingAgentID)
+
+                        % add current transaction results to the table
+                        newTransaction = table(platFormObject.myAgents(transactingAgentID).agentID, platFormObject.myAgents(transactingAgentID).liquidity, platFormObject.myTokens(transactingTokenID).tokenID, deltaSupply, ...
+                            platFormObject.myTokens(transactingTokenID).currentBuyPrice, platFormObject.myTokens(transactingTokenID).currentSellPrice, platFormObject.myTokens(transactingTokenID).currentSupply, action, simulationMonth, ...
+                        'VariableNames', {'AgentID', 'AgentLiquidity', 'TokenID', 'DeltaSupply', 'TokenCurrentBuyPrice', 'TokenCurrentSellPrice', 'TokenCurrentSupply', 'TransactionType', 'SimulationMonth'});
+                            transactionsLog = [transactionsLog; newTransaction];
                     end
+
                 end
 
                 %     update the monthly record (moving avg, min-max price, etc.) of all tokens
@@ -440,6 +450,10 @@ classdef Platform
             end
             myAgents = platFormObject.myAgents;
             myTokens = platFormObject.myTokens;
+            % write results data to a CSV file
+            filename = 'linear_tbc_sim_transactions_log.csv'; % File name for the CSV
+            writetable(transactionsLog, filename);
+            disp("Simulation results saved to " + filename);
 
         end
 

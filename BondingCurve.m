@@ -10,7 +10,7 @@ classdef BondingCurve
 
     methods 
         function BondingCurveObj = BondingCurve(functionType)
-            if narg > 0  
+            if nargin > 0  
                 BondingCurveObj.functionType = functionType;
 
                 if BondingCurveObj.functionType == "linear"

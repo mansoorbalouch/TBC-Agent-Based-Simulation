@@ -173,10 +173,11 @@ classdef Platform
 
 
         function [myAgents, myTokens] = Run(platFormObject, numSimulationMonths)
-            %             numSimulationMinutesPerMonth = 30*24*60;
-            numSimulationMinutesPerMonth = 100;
+            numSimulationMinutesPerMonth = 30*24*60;
+%             numSimulationMinutesPerMonth = 100;
             transactionsLog = table('Size', [0, 9], 'VariableTypes', {'int16','double', 'int16', 'double', 'double', 'double', 'double', 'string', 'int16'}, ...
                 'VariableNames', {'AgentID', 'AgentLiquidity', 'TokenID', 'DeltaSupply', 'TokenCurrentBuyPrice', 'TokenCurrentSellPrice', 'TokenCurrentSupply', 'TransactionType', 'SimulationMonth'});
+            bondingCurve = BondingCurve("linear");
 
             for simulationMonth=1:numSimulationMonths
                 aliveAgents = [];
@@ -347,11 +348,13 @@ classdef Platform
                     if action == "buy"
                         %   choose how much (deltaSupply) to buy/sell based on liquidity or token holdings and risk averseness
                         deltaSupply = rand(1);
-                        costDeltaSupply = integral(platFormObject.buyFunction, platFormObject.myTokens(transactingTokenID).currentSupply, platFormObject.myTokens(transactingTokenID).currentSupply + deltaSupply);
+                        costDeltaSupply = bondingCurve.costDeltaSupply(platFormObject.myTokens(transactingTokenID).currentSupply, 5, 0, deltaSupply);
+%                         costDeltaSupply = integral(platFormObject.buyFunction, platFormObject.myTokens(transactingTokenID).currentSupply, platFormObject.myTokens(transactingTokenID).currentSupply + deltaSupply);
 
                         while costDeltaSupply > platFormObject.myAgents(transactingAgentID).liquidity % check if the cost is within the available liquidity
                             deltaSupply = deltaSupply/2;
-                            costDeltaSupply = integral(platFormObject.buyFunction, platFormObject.myTokens(transactingTokenID).currentSupply, platFormObject.myTokens(transactingTokenID).currentSupply + deltaSupply);
+                            costDeltaSupply = bondingCurve.costDeltaSupply(platFormObject.myTokens(transactingTokenID).currentSupply, 5, 0, deltaSupply);
+%                             costDeltaSupply = integral(platFormObject.buyFunction, platFormObject.myTokens(transactingTokenID).currentSupply, platFormObject.myTokens(transactingTokenID).currentSupply + deltaSupply);
                         end
 
                         % update the transacting token records
@@ -395,8 +398,8 @@ classdef Platform
                         if numel(deltaSupply)==0
                             deltaSupply = currentHoldingsTransactingToken * 0.5;
                         end
-
-                        costDeltaSupply = integral(platFormObject.sellFunction, platFormObject.myTokens(transactingTokenID).currentSupply - deltaSupply, platFormObject.myTokens(transactingTokenID).currentSupply);
+                        costDeltaSupply = bondingCurve.costDeltaSupply(platFormObject.myTokens(transactingTokenID).currentSupply, 5, 0, deltaSupply);
+%                         costDeltaSupply = integral(platFormObject.sellFunction, platFormObject.myTokens(transactingTokenID).currentSupply - deltaSupply, platFormObject.myTokens(transactingTokenID).currentSupply);
 
                         % update the transacting token records
                         platFormObject.myTokens(transactingTokenID).currentSupply = platFormObject.myTokens(transactingTokenID).currentSupply - deltaSupply;

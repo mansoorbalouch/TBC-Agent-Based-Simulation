@@ -155,7 +155,7 @@ classdef Platform
             agentsBornYearly = [0.025*numAgents, 0.135*numAgents, 0.34*numAgents, 0.34*numAgents, 0.16*numAgents];
             for term=1:total_years
                 for i = 1:agentsBornYearly(term)
-                    newAgent = Agent(agentID, myAgentsPurposeCategories(j), term, 0, paramObject);
+                    newAgent = Agent(agentID, myAgentsPurposeCategories(j), term, 0, platFormObject);
                     if newAgent.purposeCategory == "Creator"
                         lifeCycleCurveShapeID = randsample([1:28],1);
                         newToken = Token(tokenID, agentID, tokenTypes_5Years_Expected_Prices, lifeCycleCurveShapeID);
@@ -282,16 +282,63 @@ classdef Platform
                                 end
                             end
 
-                        elseif (platFormObject.myAgents(transactingAgentID).strategyType == "charty")
-                            continue;
+                        elseif platFormObject.myAgents(transactingAgentID).strategyType == "charty"
 
-                            %   if "charty", estimate the future price of all available
-                            %   tokens and select the token with highest est-price for buy and lowest est-price for sell
+                            %   estimate the future price of all available tokens to make buy/sell decisions
+                            allTokensExpectedPrices = [];
+                            for token=1:numel(platFormObject.myTokens) % compute the expected prices of all tokens
+
+                                weights = platFormObject.myAgents(transactingAgentID).monthlyWeights4MvngAvg_Charty;
+                                averageMonthlyPrices = platFormObject.myTokens(token).monthlyPastAveragePrices_5years(1:platFormObject.myAgents(transactingAgentID).numHindsightTerms_Charty);
+                                weightedMonthlyPrices = sum(weights.*averageMonthlyPrices);
+
+                                allTokensExpectedPrices(token) = (platFormObject.myTokens(token).currentBuyPrice + weightedMonthlyPrices)/2;
+                            end
+
+                            tokensPriceGaps = allTokensExpectedPrices - [platFormObject.myTokens.currentBuyPrice]; % price gap = token expected price - token current price (+ve gap represents increasing price and vice versa)
+                            tokensPriceGaps_HeldTokens = [];
+                            for token=1:numel(platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs) % get the ids and price gap of the already held tokens
+                                tokensPriceGaps_HeldTokens = [tokensPriceGaps_HeldTokens, tokensPriceGaps(platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs(token))]; 
+                            end
+                            minPriceGap_HeldTokens = min(tokensPriceGaps_HeldTokens);
+                            maxPriceGap_AllTokens = max(tokensPriceGaps);
+
+                            if (width(platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs) > 0)  & (platFormObject.myAgents(transactingAgentID).liquidity > 0)
+
+                                if maxPriceGap_AllTokens > 0 % check if no token is worth buying -- all tokens have -ve price gap
+                                    if maxPriceGap_AllTokens > abs(minPriceGap_HeldTokens) % buy the token with max price gap
+                                        transactingTokenID = find([tokensPriceGaps] == maxPriceGap_AllTokens);
+                                        if numel(transactingTokenID)>1 % if multiple tokens have highest price gaps, then choose one at random
+                                            transactingTokenID = randsample([transactingTokenID],1);
+                                        end
+                                        action = "buy";
+
+                                    elseif maxPriceGap_AllTokens < abs(minPriceGap_HeldTokens)  % sell held token with min price gap
+                                        transactingTokenID = find([tokensPriceGaps] == minPriceGap_HeldTokens);
+                                        if numel(transactingTokenID)>1 % if multiple tokens have highest price gaps, then choose one at random
+                                            transactingTokenID = randsample([transactingTokenID],1);
+                                        end
+                                        action = "sell";
+                                    end
+                                end
+
+                            elseif (platFormObject.myAgents(transactingAgentID).liquidity <= 0) & (width(platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs) > 0) % agent owns tokens only -- sell tokens
+                                if numel(transactingTokenID)>1 % if multiple tokens have highest price gaps, then choose one at random
+                                    transactingTokenID = randsample([transactingTokenID],1);
+                                end
+                                action = "sell";
+
+                            elseif (platFormObject.myAgents(transactingAgentID).liquidity > 0) & (width(platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs) == 0) % agent has liquidity only --- can only buy tokens
+                                maxPriceGap_AllTokens = max(tokensPriceGaps);
+                                if maxPriceGap_AllTokens > 0 % check if no token is worth buying
+                                    transactingTokenID = find([tokensPriceGaps] == maxPriceGap_AllTokens);
+                                    if width(transactingTokenID)>1 % if multiple tokens have highest price gaps, then choose one at random
+                                        transactingTokenID = randsample([transactingTokenID],1);
+                                    end
+                                    action = "buy";
+                                end
+                            end
                         end
-
-                        %                     else
-                        %                         %    skip this simulation step --- no transaction
-                        %                         disp("Agent has no liquidity or token holdings, skip this simulation step..")
 
                     end
 

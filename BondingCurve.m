@@ -12,8 +12,6 @@ classdef BondingCurve
         function BondingCurveObj = BondingCurve(functionType)
             if narg > 0  
                 BondingCurveObj.functionType = functionType;
-                BondingCurveObj.buyFunction = buyFunction;
-                BondingCurveObj.sellFunction = sellFunction;
 
                 if functionType == "linear"
                     BondingCurveObj.buyFunction = @(s, m, c) m * s + c;

@@ -21,8 +21,8 @@ classdef Token
 
         currentMonthPriceRunningSum double;
         currentMonthNumTransactionsRunningCount int16;
-        currentMonthHighestPrice int16;
-        currentMonthLowestPrice int16;
+        currentMonthHighestPrice double;
+        currentMonthLowestPrice double;
     end
 
     methods

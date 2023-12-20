@@ -5,21 +5,30 @@ classdef BondingCurve
         sellFunction function_handle;
         deltaSupply function_handle;
         costDeltaSupply function_handle;
+        param1 double;
+        param2 double;
+        param3 double;
 
     end
 
     methods 
-        function BondingCurveObj = BondingCurve(functionType)
+        function BondingCurveObj = BondingCurve(functionType, param1, param2, param3)
             if nargin > 0  
                 BondingCurveObj.functionType = functionType;
 
                 if BondingCurveObj.functionType == "linear"
+                    BondingCurveObj.param1 = param1;
+                    BondingCurveObj.param2 = param2;
+                    BondingCurveObj.param3 = param3;
                     BondingCurveObj.buyFunction = @(s, m, c) m * s + c;
                     BondingCurveObj.sellFunction = @(s, m, c) m * s + c;
                     BondingCurveObj.deltaSupply = @(s, m, c, costDeltaSupply) - (m*s+c)/m^2 + sqrt((s+c/m)^2 + 2*costDeltaSupply);
                     BondingCurveObj.costDeltaSupply = @(s, m, c, deltaSupply) m/2 * (deltaSupply^2 + 2*s*deltaSupply) + c*deltaSupply ;
                 
                 elseif BondingCurveObj.functionType == "polynomial"
+                    BondingCurveObj.param1 = param1;
+                    BondingCurveObj.param2 = param2;
+                    BondingCurveObj.param3 = param3;
                     BondingCurveObj.buyFunction = @(s, m, n, c) m * s^n + c;
                     BondingCurveObj.sellFunction =@(s, m, n, c) m * s^n + c;
                     BondingCurveObj.deltaSupply = deltaSupply;

@@ -64,9 +64,6 @@ classdef Platform
 
         function platFormObject = Platform(numAgents,numSimulationMonths)
             if nargin > 0
-                platFormObject.buyFunction = @(s) 2* s;
-                platFormObject.sellFunction = @(s) 2* s;
-
                 platFormObject.risk_mu_fundy = 0.20;
                 platFormObject.risk_sigma_fundy = 0.03;
                 platFormObject.risk_mu_charty = 0.40;
@@ -107,7 +104,7 @@ classdef Platform
                 platFormObject.poor_sigma_DayOfPassing = 2;
 
                 platFormObject.numAgents = numAgents;
-                bondingCurveObj = BondingCurve("linear");
+                bondingCurveObj = BondingCurve("linear", 5, 0, 0);
 
                 % platFormObject.myAgents= Agent.empty(1,numAgents);
 
@@ -142,19 +139,15 @@ classdef Platform
             agentPurposeCategories =[ "Investor", "Creator","Utilizer","Speculator"];
             myAgentsPurposeCategories = randsample(agentPurposeCategories, numAgents,true,[0.2,0.1,0.3,0.4]);
 
-            myAgents = Agent.empty(0,numAgents);  %Not Needed
-            myTokens =[];    %Not Needed
-
-            % myAgents = [];  %Not Needed
-            % myTokens =[];    %Not Needed
+            myAgents = Agent.empty(0,numAgents);  
+            myTokens = [];
 
             tblTokenTypes_5Years_SupplyCycles = csvread("TokenTypes_5Years_SupplyCycles.csv",1,0 );
             tokenTypes_5Years_Expected_Prices = zeros(size(tblTokenTypes_5Years_SupplyCycles));
 
             for row=1:height(tblTokenTypes_5Years_SupplyCycles)
                 for column=1:width(tblTokenTypes_5Years_SupplyCycles)
-                    tokenTypes_5Years_Expected_Prices(row,column) = bondingCurveObj.buyFunction(tblTokenTypes_5Years_SupplyCycles(row,column), 5, 0);
-                    % platFormObject.buyFunction(tblTokenTypes_5Years_SupplyCycles(row,column)) * 2;
+                    tokenTypes_5Years_Expected_Prices(row,column) = bondingCurveObj.buyFunction(tblTokenTypes_5Years_SupplyCycles(row,column), bondingCurveObj.param1, bondingCurveObj.param2);
                 end
             end
 
@@ -170,17 +163,10 @@ classdef Platform
                         newToken = Token(tokenID, agentID, tokenTypes_5Years_Expected_Prices, lifeCycleCurveShapeID);
 
                         myTokens = [myTokens, newToken];   %Not Needed
-                        platFormObject.myTokens = [platFormObject.myTokens, newToken];
 
                         tokenID = tokenID + 1;
                     end
-                    % myAgents = [myAgents, newAgent];   %Not Needed
                     myAgents(1,agentID) = newAgent;
-
-                    % platFormObject.myAgents = [platFormObject.myAgents, newAgent];
-
-                    % platFormObject.myAgents(1,agentID) = newAgent;
-
 
                     agentID = agentID + 1;
                     j = j + 1;
@@ -194,13 +180,15 @@ classdef Platform
         function [myAgents, myTokens] = Run(platFormObject, bondingCurveObj, numSimulationMonths)
             % numSimulationMinutesPerMonth = 30*24*60;
             numSimulationMinutesPerMonth = 100;
-            transactionsLog = table('Size', [0, 9], 'VariableTypes', {'int16','double', 'int16', 'double', 'double', 'double', 'double', 'string', 'int16'}, ...
-                'VariableNames', {'AgentID', 'AgentLiquidity', 'TokenID', 'DeltaSupply', 'TokenCurrentBuyPrice', 'TokenCurrentSellPrice', 'TokenCurrentSupply', 'TransactionType', 'SimulationMonth'});
+            fileID = fopen('tbc_sim_transactions_Log.txt','w'); 
+            fprintf(fileID,'%4s %4s %4s %4s %4s %4s %4s %4s %4s \n','AgentID','AgentLiquidity','TokenID', 'DeltaSupply', 'TokenCurrentBuyPrice', 'TokenCurrentSellPrice', 'TokenCurrentSupply', 'TransactionType', 'SimulationMonth');
+%             transactionsLog = table('Size', [0, 9], 'VariableTypes', {'int16','double', 'int16', 'double', 'double', 'double', 'double', 'string', 'int16'}, ...
+%                 'VariableNames', {'AgentID', 'AgentLiquidity', 'TokenID', 'DeltaSupply', 'TokenCurrentBuyPrice', 'TokenCurrentSellPrice', 'TokenCurrentSupply', 'TransactionType', 'SimulationMonth'});
 
             for simulationMonth=1:numSimulationMonths
                 aliveAgents = [];
                 for i = 1:numel(platFormObject.myAgents) % get the alive agents
-                    if (platFormObject.myAgents(i).dayOfBirth < simulationMonth+1) && (platFormObject.myAgents(i).dayOfPassing > simulationMonth+1) & (platFormObject.myAgents(i).purposeCategory ~= "Creator")
+                    if (platFormObject.myAgents(i).dayOfBirth < simulationMonth+1) & (platFormObject.myAgents(i).dayOfPassing > simulationMonth+1) & (platFormObject.myAgents(i).purposeCategory ~= "Creator")
                         aliveAgents = [aliveAgents, platFormObject.myAgents(i)];
                     end
                 end
@@ -366,19 +354,19 @@ classdef Platform
                     if action == "buy"
                         %   choose how much (deltaSupply) to buy/sell based on liquidity or token holdings and risk averseness
                         deltaSupply = rand(1);
-                        costDeltaSupply = bondingCurveObj.costDeltaSupply(platFormObject.myTokens(transactingTokenID).currentSupply, 5, 0, deltaSupply);
+                        costDeltaSupply = bondingCurveObj.costDeltaSupply(platFormObject.myTokens(transactingTokenID).currentSupply, bondingCurveObj.param1, bondingCurveObj.param2, deltaSupply);
                         %                         costDeltaSupply = integral(platFormObject.buyFunction, platFormObject.myTokens(transactingTokenID).currentSupply, platFormObject.myTokens(transactingTokenID).currentSupply + deltaSupply);
 
                         while costDeltaSupply > platFormObject.myAgents(transactingAgentID).liquidity % check if the cost is within the available liquidity
                             deltaSupply = deltaSupply/2;
-                            costDeltaSupply = bondingCurveObj.costDeltaSupply(platFormObject.myTokens(transactingTokenID).currentSupply, 5, 0, deltaSupply);
+                            costDeltaSupply = bondingCurveObj.costDeltaSupply(platFormObject.myTokens(transactingTokenID).currentSupply, bondingCurveObj.param1, bondingCurveObj.param2, deltaSupply);
                             %                             costDeltaSupply = integral(platFormObject.buyFunction, platFormObject.myTokens(transactingTokenID).currentSupply, platFormObject.myTokens(transactingTokenID).currentSupply + deltaSupply);
                         end
 
                         % update the transacting token records
                         platFormObject.myTokens(transactingTokenID).currentSupply = platFormObject.myTokens(transactingTokenID).currentSupply + deltaSupply;
-                        platFormObject.myTokens(transactingTokenID).currentBuyPrice = platFormObject.buyFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
-                        platFormObject.myTokens(transactingTokenID).currentSellPrice = platFormObject.sellFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
+                        platFormObject.myTokens(transactingTokenID).currentBuyPrice = bondingCurveObj.buyFunction(platFormObject.myTokens(transactingTokenID).currentSupply, bondingCurveObj.param1, bondingCurveObj.param2); 
+                        platFormObject.myTokens(transactingTokenID).currentSellPrice = bondingCurveObj.sellFunction(platFormObject.myTokens(transactingTokenID).currentSupply, bondingCurveObj.param1, bondingCurveObj.param2); 
                         platFormObject.myTokens(transactingTokenID).currentMonthPriceRunningSum= platFormObject.myTokens(transactingTokenID).currentMonthPriceRunningSum+ platFormObject.myTokens(transactingTokenID).currentSellPrice;
                         platFormObject.myTokens(transactingTokenID).currentMonthNumTransactionsRunningCount = platFormObject.myTokens(transactingTokenID).currentMonthNumTransactionsRunningCount + 1;
 
@@ -402,11 +390,14 @@ classdef Platform
                         end
                         platFormObject.myAgents(transactingAgentID).liquidity = platFormObject.myAgents(transactingAgentID).liquidity - costDeltaSupply;
 
+                        fprintf(fileID, "%i %f %i %f %f %f %f %s %i \n", platFormObject.myAgents(transactingAgentID).agentID, platFormObject.myAgents(transactingAgentID).liquidity, platFormObject.myTokens(transactingTokenID).tokenID, deltaSupply, ...
+                             platFormObject.myTokens(transactingTokenID).currentBuyPrice, platFormObject.myTokens(transactingTokenID).currentSellPrice, platFormObject.myTokens(transactingTokenID).currentSupply, action, simulationMonth);
+
                         % add current transaction results to the table
-                        newTransaction = table(platFormObject.myAgents(transactingAgentID).agentID, platFormObject.myAgents(transactingAgentID).liquidity, platFormObject.myTokens(transactingTokenID).tokenID, deltaSupply, ...
-                            platFormObject.myTokens(transactingTokenID).currentBuyPrice, platFormObject.myTokens(transactingTokenID).currentSellPrice, platFormObject.myTokens(transactingTokenID).currentSupply, action, simulationMonth, ...
-                            'VariableNames', {'AgentID', 'AgentLiquidity', 'TokenID', 'DeltaSupply', 'TokenCurrentBuyPrice', 'TokenCurrentSellPrice', 'TokenCurrentSupply', 'TransactionType', 'SimulationMonth'});
-                        transactionsLog = [transactionsLog; newTransaction];
+%                         newTransaction = table(platFormObject.myAgents(transactingAgentID).agentID, platFormObject.myAgents(transactingAgentID).liquidity, platFormObject.myTokens(transactingTokenID).tokenID, deltaSupply, ...
+%                             platFormObject.myTokens(transactingTokenID).currentBuyPrice, platFormObject.myTokens(transactingTokenID).currentSellPrice, platFormObject.myTokens(transactingTokenID).currentSupply, action, simulationMonth, ...
+%                             'VariableNames', {'AgentID', 'AgentLiquidity', 'TokenID', 'DeltaSupply', 'TokenCurrentBuyPrice', 'TokenCurrentSellPrice', 'TokenCurrentSupply', 'TransactionType', 'SimulationMonth'});
+%                         transactionsLog = [transactionsLog; newTransaction];
 
                     elseif action == "sell"
 
@@ -416,13 +407,16 @@ classdef Platform
                         if numel(deltaSupply)==0
                             deltaSupply = currentHoldingsTransactingToken * 0.5;
                         end
-                        costDeltaSupply = bondingCurveObj.costDeltaSupply(platFormObject.myTokens(transactingTokenID).currentSupply, 5, 0, deltaSupply);
+                        while deltaSupply > platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndex) % check if the cost is within the available liquidity
+                            deltaSupply = deltaSupply/2;
+                        end
+                        costDeltaSupply = bondingCurveObj.costDeltaSupply(platFormObject.myTokens(transactingTokenID).currentSupply, bondingCurveObj.param1, bondingCurveObj.param2, deltaSupply);
                         %                         costDeltaSupply = integral(platFormObject.sellFunction, platFormObject.myTokens(transactingTokenID).currentSupply - deltaSupply, platFormObject.myTokens(transactingTokenID).currentSupply);
 
                         % update the transacting token records
                         platFormObject.myTokens(transactingTokenID).currentSupply = platFormObject.myTokens(transactingTokenID).currentSupply - deltaSupply;
-                        platFormObject.myTokens(transactingTokenID).currentBuyPrice = platFormObject.buyFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
-                        platFormObject.myTokens(transactingTokenID).currentSellPrice = platFormObject.sellFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
+                        platFormObject.myTokens(transactingTokenID).currentBuyPrice = bondingCurveObj.buyFunction(platFormObject.myTokens(transactingTokenID).currentSupply, bondingCurveObj.param1, bondingCurveObj.param2); 
+                        platFormObject.myTokens(transactingTokenID).currentSellPrice = bondingCurveObj.sellFunction(platFormObject.myTokens(transactingTokenID).currentSupply, bondingCurveObj.param1, bondingCurveObj.param2); 
                         platFormObject.myTokens(transactingTokenID).currentMonthPriceRunningSum= platFormObject.myTokens(transactingTokenID).currentMonthPriceRunningSum+ platFormObject.myTokens(transactingTokenID).currentSellPrice;
                         platFormObject.myTokens(transactingTokenID).currentMonthNumTransactionsRunningCount = platFormObject.myTokens(transactingTokenID).currentMonthNumTransactionsRunningCount + 1;
 
@@ -443,11 +437,14 @@ classdef Platform
                         end
                         platFormObject.myAgents(transactingAgentID).liquidity = platFormObject.myAgents(transactingAgentID).liquidity + costDeltaSupply;
 
+                        fprintf(fileID, "%i %f %i %f %f %f %f %s %i \n", platFormObject.myAgents(transactingAgentID).agentID, platFormObject.myAgents(transactingAgentID).liquidity, platFormObject.myTokens(transactingTokenID).tokenID, deltaSupply, ...
+                             platFormObject.myTokens(transactingTokenID).currentBuyPrice, platFormObject.myTokens(transactingTokenID).currentSellPrice, platFormObject.myTokens(transactingTokenID).currentSupply, action, simulationMonth);
+
                         % add current transaction results to the table
-                        newTransaction = table(platFormObject.myAgents(transactingAgentID).agentID, platFormObject.myAgents(transactingAgentID).liquidity, platFormObject.myTokens(transactingTokenID).tokenID, deltaSupply, ...
-                            platFormObject.myTokens(transactingTokenID).currentBuyPrice, platFormObject.myTokens(transactingTokenID).currentSellPrice, platFormObject.myTokens(transactingTokenID).currentSupply, action, simulationMonth, ...
-                            'VariableNames', {'AgentID', 'AgentLiquidity', 'TokenID', 'DeltaSupply', 'TokenCurrentBuyPrice', 'TokenCurrentSellPrice', 'TokenCurrentSupply', 'TransactionType', 'SimulationMonth'});
-                        transactionsLog = [transactionsLog; newTransaction];
+%                         newTransaction = table(platFormObject.myAgents(transactingAgentID).agentID, platFormObject.myAgents(transactingAgentID).liquidity, platFormObject.myTokens(transactingTokenID).tokenID, deltaSupply, ...
+%                             platFormObject.myTokens(transactingTokenID).currentBuyPrice, platFormObject.myTokens(transactingTokenID).currentSellPrice, platFormObject.myTokens(transactingTokenID).currentSupply, action, simulationMonth, ...
+%                             'VariableNames', {'AgentID', 'AgentLiquidity', 'TokenID', 'DeltaSupply', 'TokenCurrentBuyPrice', 'TokenCurrentSellPrice', 'TokenCurrentSupply', 'TransactionType', 'SimulationMonth'});
+%                         transactionsLog = [transactionsLog; newTransaction];
                     end
 
                 end
@@ -471,68 +468,14 @@ classdef Platform
             end
             myAgents = platFormObject.myAgents;
             myTokens = platFormObject.myTokens;
+            fclose(fileID);
+
             % write results data to a CSV file
-            filename = 'linear_tbc_sim_transactions_log.csv'; % File name for the CSV
-            writetable(transactionsLog, filename);
-            disp("Simulation results saved to " + filename);
+%             filename = 'linear_tbc_sim_transactions_log.csv'; % File name for the CSV
+%             writetable(transactionsLog, filename);
+%             disp("Simulation results saved to " + filename);
 
         end
 
     end
 end
-
-
-%         function [myAgents, myTokens] = buyTokens(platFormObject, transactingTokenID, transactingAgentID, deltaSupply, costDeltaSupply)
-%             % update current token supply, price and token holdings of the transaction agent
-%
-%             platFormObject.myTokens(transactingTokenID).currentSupply = platFormObject.myTokens(transactingTokenID).currentSupply + deltaSupply;
-%             platFormObject.myTokens(transactingTokenID).currentBuyPrice = platFormObject.buyFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
-%             platFormObject.myTokens(transactingTokenID).currentSellPrice = platFormObject.sellFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
-%             platFormObject.myTokens(transactingTokenID).currentMonthPriceRunningSum= platFormObject.myTokens(transactingTokenID).currentMonthPriceRunningSum+ platFormObject.myTokens(transactingTokenID).currentSellPrice;
-%             platFormObject.myTokens(transactingTokenID).currentMonthNumTransactionsRunningCount = platFormObject.myTokens(transactingTokenID).currentMonthNumTransactionsRunningCount + 1;
-%
-%             if platFormObject.myTokens(transactingTokenID).currentBuyPrice > platFormObject.myTokens(transactingTokenID).currentMonthHighestPrice% check the current price to update the high/low price of the token
-%                 platFormObject.myTokens(transactingTokenID).currentMonthHighestPrice= platFormObject.myTokens(transactingTokenID).currentBuyPrice;
-%             end
-%             if platFormObject.myTokens(transactingTokenID).currentMonthLowestPrice == 0
-%                 platFormObject.myTokens(transactingTokenID).currentMonthLowestPrice= platFormObject.myTokens(transactingTokenID).currentBuyPrice;
-%             end
-%             if platFormObject.myTokens(transactingTokenID).currentBuyPrice < platFormObject.myTokens(transactingTokenID).currentMonthLowestPrice
-%                 platFormObject.myTokens(transactingTokenID).currentMonthLowestPrice= platFormObject.myTokens(transactingTokenID).currentBuyPrice;
-%             end
-%             platFormObject.myTokens(transactingTokenID)
-%
-%             %                   transactingToken.currentReserve = transactingToken.currentReserve + costDeltaSupply;
-%             if ismember(transactingTokenID, platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs) % if the agent already owns this token -- update the supply
-%                 tokenHoldingIndex = find(platFormObject.myAgents(transactingAgentID).tokenHoldingsValues == transactingTokenID); % get the index of the owned token and update its supply
-%                 platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndex) = platFormObject.myAgents(transactingAgentID).tokenHoldingsValues(tokenHoldingIndex) + deltaSupply;
-%             else % add new token to the agent's token list
-%                 platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs = [platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs, transactingTokenID];
-%                 platFormObject.myAgents(transactingAgentID).tokenHoldingsValues = [platFormObject.myAgents(transactingAgentID).tokenHoldingsValues, deltaSupply];
-%             end
-%             platFormObject.myAgents(transactingAgentID).liquidity = platFormObject.myAgents(transactingAgentID).liquidity - costDeltaSupply;
-%             platFormObject.myAgents(transactingAgentID)
-%
-%             myAgents = platFormObject.myAgents;
-%             myTokens = platFormObject.myTokens;
-%
-%         end
-%
-%         function sellTokens(platFormObject, transactingTokenID, transactingAgentID, deltaSupply, costDeltaSupply)
-%             % update current token supply, price and token holdings of the transaction agent
-%
-%             platFormObject.myTokens(transactingTokenID).currentSupply = platFormObject.myTokens(transactingTokenID).currentSupply - deltaSupply;
-%             platFormObject.myTokens(transactingTokenID).currentBuyPrice = platFormObject.buyFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
-%             platFormObject.myTokens(transactingTokenID).currentSellPrice = platFormObject.sellFunction(platFormObject.myTokens(transactingTokenID).currentSupply);
-%             platFormObject.myTokens(transactingTokenID).currentMonthPriceRunningSum= platFormObject.myTokens(transactingTokenID).currentMonthPriceRunningSum+ platFormObject.myTokens(transactingTokenID).currentSellPrice;
-%             platFormObject.myTokens(transactingTokenID).currentMonthNumTransactionsRunningCount = platFormObject.myTokens(transactingTokenID).currentMonthNumTransactionsRunningCount + 1;
-%             platFormObject.myTokens(transactingTokenID)
-%
-%             %                   transactingToken.currentReserve = transactingToken.currentReserve + costDeltaSupply;
-%
-%             platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs = [platFormObject.myAgents(transactingAgentID).tokenHoldingsIDs, transactingTokenID];
-%             platFormObject.myAgents(transactingAgentID).tokenHoldingsValues = [platFormObject.myAgents(transactingAgentID).tokenHoldingsValues, deltaSupply];
-%             platFormObject.myAgents(transactingAgentID).liquidity = platFormObject.myAgents(transactingAgentID).liquidity + costDeltaSupply;
-%             platFormObject.myAgents(transactingAgentID)
-%
-%         end

@@ -1,0 +1,1 @@
+TransactionID AgentID AgentLiquidity TransactionType DeltaSupply TokenID TokenCurrentBuyPrice TokenCurrentSellPrice TokenCurrentSupply SimulationMonth 

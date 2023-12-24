@@ -1,11 +1,13 @@
 class Token:
-    def __init__(self, tokenID=None, agentID=None, tokenTypes_5Years_Expected_Prices=None, lifeCycleCurveShapeID=None):
+    def __init__(self, tokenID, agentID, tokenTypes_5Years_Expected_Prices, lifeCycleCurveShapeID, DoB, DoD):
         if tokenID is not None:
             self.tokenID = tokenID
             self.ownerAgentID = agentID
             self.currentBuyPrice = 0
             self.currentSellPrice = 0
             self.currentSupply = 0
+            self.dayOfBirth = DoB
+            self.dayOfPassing = DoD
 
             self.currentMonthPriceRunningSum = 0
             self.currentMonthNumTransactionsRunningCount = 0

@@ -31,7 +31,7 @@ class Agent:
         self.numHindsightTerms_mu_Charty = 7
         self.numHindsightTerms_sigma_Charty = 1
 
-        self.creator_mu_DayOfPassing = 36
+        self.creator_mu_DayOfPassing = 70
         self.creator_sigma_DayOfPassing = 3
         self.rich_mu_DayOfPassing = 48
         self.rich_sigma_DayOfPassing = 3
@@ -59,7 +59,7 @@ class Agent:
 
         randNumber = np.random.rand()
 
-        if self.purposeCategory == "creator":
+        if self.purposeCategory == "Creator":
             self.strategyType = "none"
             self.riskAppetite = 0
             self.proActiveness = 0

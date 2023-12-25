@@ -6,9 +6,10 @@ import random
 import pandas as pd
 import timeit
 import argparse
+import os
 
 class Platform:
-    def __init__(self, numAgents,bondingCurveType, param1, param2, param3=None):
+    def __init__(self, numAgents, numSimulationMonths, bondingCurveType, param1, param2, param3=None, save_results_path=None):
         # Initialize properties
         # self.buyFunction = None  # Placeholder for function handle
         # self.sellFunction = None  # Placeholder for function handle
@@ -18,14 +19,22 @@ class Platform:
         self.numTokens = 0  # Initialize as 0, to be updated based on platform logic
         self.myAgents = []  # List to store Agent objects
         self.myTokens = []  # List to store Token objects
+        self.numSimulationMonths = numSimulationMonths
 
         self.bonding_curve_obj = BondingCurve(bondingCurveType, param1_m=param1, param2_c=param2, param3_n=param3)
+        self.save_results_path = "/media/dataanalyticlab/Drive2/MANSOOR/DeFI-Agent/Code/Bonding-Curves/TBC-Agent-Based-Simulation/Results"
         
         start = timeit.default_timer()
         self.create_agents_and_tokens(self.bonding_curve_obj)
         stop = timeit.default_timer()
         time_new = stop - start
         print("Agent creation time elapsed: ", time_new)
+
+        start = timeit.default_timer()
+        self.run_simulation()
+        stop = timeit.default_timer()
+        time_new = stop - start
+        print(f"Simulation time elapsed for {numMonths} months : ", time_new)
  
 
     def create_agents_and_tokens(self, bonding_curve_obj):
@@ -34,10 +43,14 @@ class Platform:
         agent_id = 1
         token_id = 1
         j = 0
-        myAgentsfileID = open(f'Results/MyAgents_{self.numAgents}.txt', 'w')
+        self.new_dir = f"{self.bonding_curve_obj.functionType}_TBC_{self.numAgents}Agents_For_{self.numSimulationMonths}Months"
+        if not os.path.exists(os.path.join(self.save_results_path, self.new_dir)): # create a new directory for the specific simulation run files
+            self.path = os.mkdir(os.path.join(self.save_results_path, self.new_dir)) 
+        
+        myAgentsfileID = open(f'Results/{self.new_dir}/My_{self.numAgents}Agents_{self.bonding_curve_obj.functionType}_tbc.txt', 'w')
         myAgentsfileID.write('%s %s %s %s %s %s %s %s %s %s\n' % ('AgentID', 'AgentLiquidity', 'AgentPurposeCategory', 'AgentStrategyType', 'RiskAppetite', 'ProActivity', 'IntelligenceGap', 'OwnTokenID', 'DoB', 'DoD'))
 
-        myTokensfileID = open(f'Results/MyTokens_for_{self.numAgents}_Agents.txt', 'w')
+        myTokensfileID = open(f'Results/{self.new_dir}/MyTokens_for_{self.numAgents}Agents_{self.bonding_curve_obj.functionType}_tbc.txt', 'w')
         myTokensfileID.write('%s %s %s %s %s\n' % ('TokenID', 'OwnerAgentID', 'LifeCycleCurveShape', 'DoB', 'DoD'))
 
         agent_purpose_categories = ["Investor", "Creator", "Utilizer", "Speculator"]
@@ -78,13 +91,13 @@ class Platform:
         myTokensfileID.close()
 
 
-    def run_simulation(self, numSimulationMonths):
+    def run_simulation(self):
         numSimulationMinutesPerMonth = 30*24*60
-        fileID = open(f'Results/tbc_sim_{self.bonding_curve_obj.functionType}_{self.numAgents}Agents_{numSimulationMonths}Months_transactions_log.txt', 'w')
+        fileID = open(f'Results/{self.new_dir}/Transactions_log_{self.bonding_curve_obj.functionType}_{self.numAgents}Agents_{self.numSimulationMonths}Months.txt', 'w')
         fileID.write('%s %s %s %s %s %s %s %s %s %s\n' % ('TransactionID', 'AgentID', 'AgentLiquidity', 'TransactionType', 'DeltaSupply', 'TokenID', 'TokenCurrentBuyPrice', 'TokenCurrentSellPrice', 'TokenCurrentSupply', 'SimulationMonth'))
 
         transactionID = 0
-        for simulationMonth in range(1, numSimulationMonths + 1):
+        for simulationMonth in range(1, self.numSimulationMonths + 1):
             
             aliveAgents_dict = dict()
             aliveTokensIDs = [] # [None] * alive_tokens_count
@@ -95,8 +108,8 @@ class Platform:
                     else:
                         aliveTokensIDs.append(self.myAgents[i].ownTokenId)
             
-            if (len(aliveTokensIDs)==0): # check if there is no alive token
-                print("No alive token, skip this transaction step!!")
+            if (len(aliveTokensIDs)==0) or (len(aliveAgents_dict)==0): # check if there is no alive token
+                print("No alive token or agent, skip this transaction step!!")
                 continue 
 
             # compute the expected prices of all tokens for alive fundy agents
@@ -105,6 +118,8 @@ class Platform:
                         self.myAgents[fundyAgent].currentMonthAllTokensExpectedPrices_Fundy = [None]*len(aliveTokensIDs)
                         # Compute the expected prices of all tokens
                         for j, tokenID in enumerate(aliveTokensIDs):
+                            # print("AgentID:", self.myAgents[fundyAgent])
+                            # print("TokenID", self.myTokens[tokenID])
                             exp_price = sum(w * fp * (1 - self.myAgents[fundyAgent].intelligenceGap) for w, fp in zip(
                                 self.myAgents[fundyAgent].monthlyWeights4ExpPrice_Fundy[:self.myAgents[fundyAgent].numTermsForeseen_Fundy],
                                 self.myTokens[tokenID].monthlyFairPrices_5years[:self.myAgents[fundyAgent].numTermsForeseen_Fundy]))
@@ -353,12 +368,8 @@ if __name__ == '__main__':
     bondingCurve = args["bondingCurve"]
 
 
-    platform = Platform(numAgents, bondingCurve, param1, param2, param3)
-    start = timeit.default_timer()
-    platform.run_simulation(numMonths)
-    stop = timeit.default_timer()
-    time_new = stop - start
-    print(f"Simulation time elapsed for {numMonths} months : ", time_new)
+    platform = Platform(numAgents, numMonths, bondingCurve, param1, param2, param3)
+    
 
 # for agent in p.myAgents:
 #     # if agent.strategyType == "fundy" and len(agent.currentMonthAllTokensExpectedPrices_Fundy) > 0:

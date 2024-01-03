@@ -47,11 +47,11 @@ class Agent:
         self.ownTokenId = ownTokenId
 
         self.numTermsForeseen_Fundy = 0
-        self.monthlyWeights4ExpPrice_Fundy = []
+        self.weights4ExpPricePerTerm_Fundy = []
         self.numHindsightTerms_Charty = 0
-        self.monthlyWeights4MvngAvg_Charty = []
-        self.currentMonthAllTokensExpectedPrices_Fundy = []
-        self.currentMonthAllTokensExpectedPrices_Charty = []        
+        self.weights4MvngAvgPerTerm_Charty = []
+        self.currentTermAllTokensExpectedPrices_Fundy = []
+        self.currentTermAllTokensExpectedPrices_Charty = []        
 
         self.tokenHoldings = dict()
         # self.tokenHoldingsIDs = []
@@ -64,6 +64,7 @@ class Agent:
             self.riskAppetite = 0
             self.proActiveness = 0
             self.liquidity = 0
+            self.netClosingWealthCurrentTerm = 0
             self.dayOfPassing = int(DoB + abs(np.random.normal(self.creator_mu_DayOfPassing, self.creator_sigma_DayOfPassing)))
         elif self.purposeCategory == "Investor":
             if randNumber <= .9:
@@ -73,6 +74,7 @@ class Agent:
             else:
                 self.strategyType = "noisy"
             self.liquidity = np.random.normal(self.rich_mu_liquidity, self.rich_sigma_liquidity)
+            self.netClosingWealthCurrentTerm = self.liquidity 
             self.dayOfPassing = int(abs(DoB + np.random.normal(self.rich_mu_DayOfPassing, self.rich_sigma_DayOfPassing)))
         elif self.purposeCategory == "Utilizer":
             if randNumber <= .9:
@@ -82,6 +84,7 @@ class Agent:
             else:
                 self.strategyType = "noisy"
             self.liquidity = np.random.normal(self.midClass_mu_liquidity, self.midClass_sigma_liquidity)
+            self.netClosingWealthCurrentTerm = self.liquidity 
             self.dayOfPassing = int(abs(DoB + np.random.normal(self.midClass_mu_DayOfPassing, self.midClass_sigma_DayOfPassing)))
         else:  # Speculator
             if randNumber <= .8:
@@ -91,6 +94,7 @@ class Agent:
             else:
                 self.strategyType = "fundy"
             self.liquidity = np.random.normal(self.poor_mu_liquidity, self.poor_sigma_liquidity)
+            self.netClosingWealthCurrentTerm = self.liquidity 
             self.dayOfPassing = int(abs(DoB + np.random.normal(self.poor_mu_DayOfPassing, self.poor_sigma_DayOfPassing)))
 
         # Set strategies and other parameters
@@ -106,8 +110,8 @@ class Agent:
             elif  self.numTermsForeseen_Fundy >10:
                 self.numTermsForeseen_Fundy =10
             terms = np.arange(1, self.numTermsForeseen_Fundy + 1)
-            self.monthlyWeights4ExpPrice_Fundy = 1 / terms
-            self.monthlyWeights4ExpPrice_Fundy /= self.monthlyWeights4ExpPrice_Fundy.sum()
+            self.weights4ExpPricePerTerm_Fundy = 1 / terms
+            self.weights4ExpPricePerTerm_Fundy /= self.weights4ExpPricePerTerm_Fundy.sum()
         elif self.strategyType == "charty":
             self.riskAppetite = np.random.normal(self.risk_mu_charty, self.risk_sigma_charty)
             self.riskAppetite = max(0.0001, min(self.riskAppetite, 0.9999))
@@ -119,13 +123,15 @@ class Agent:
             elif  self.numHindsightTerms_Charty >10:
                 self.numHindsightTerms_Charty =10
             terms = np.arange(1, self.numHindsightTerms_Charty + 1)
-            self.monthlyWeights4MvngAvg_Charty = 1 / terms
-            self.monthlyWeights4MvngAvg_Charty /= self.monthlyWeights4MvngAvg_Charty.sum()
+            self.weights4MvngAvgPerTerm_Charty = 1 / terms
+            self.weights4MvngAvgPerTerm_Charty /= self.weights4MvngAvgPerTerm_Charty.sum()
         elif self.strategyType == "noisy":
             self.riskAppetite = np.random.normal(self.risk_mu_noisy, self.risk_sigma_noisy)
             self.riskAppetite = max(0.0001, min(self.riskAppetite, 0.9999))
             self.proActiveness = np.random.normal(self.activity_mu_noisy, self.activity_sigma_noisy)
             self.proActiveness = max(0.0001, min(self.proActiveness, 0.9999))
+
+        
 
     def __str__(self):
         return (
@@ -142,10 +148,10 @@ class Agent:
             f"Day of Passing: {self.dayOfPassing}\n"
             f"Num Terms Foreseen (Fundy): {self.numTermsForeseen_Fundy}\n"
             f"Num Hindsight Terms (Charty): {self.numHindsightTerms_Charty}\n"
-            f"Monthly Weights (Charty): {self.monthlyWeights4MvngAvg_Charty}\n"
-            f"Monthly Weights (Fundy): {self.monthlyWeights4ExpPrice_Fundy}\n"
-            f"Current Month Tokens Expected Prices (Fundy):{self.currentMonthAllTokensExpectedPrices_Fundy}\n"
-            f"Current Month Tokens Expected Prices (Charty):{self.currentMonthAllTokensExpectedPrices_Charty}\n-------------------------------\n"
+            f"Weights Per Term (Charty): {self.weights4MvngAvgPerTerm_Charty}\n"
+            f"Weights Per Term (Fundy): {self.weights4ExpPricePerTerm_Fundy}\n"
+            f"Current Term Tokens Expected Prices (Fundy):{self.currentTermAllTokensExpectedPrices_Fundy}\n"
+            f"Current Term Tokens Expected Prices (Charty):{self.currentTermAllTokensExpectedPrices_Charty}\n-------------------------------\n"
         )
 # Example usage:
 # plateParamsDict = {'creator_mu_DayOfPassing': 3, 'creator_sigma_DayOfPassing': 1, ...}

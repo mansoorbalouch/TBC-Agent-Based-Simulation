@@ -9,7 +9,10 @@ import argparse
 import os
 
 class Platform:
-    def __init__(self, numAgents, numSimulationMonths, bondingCurveType, param1, param2, param3=None, save_results_path=None):
+    def __init__(self, numAgents, numSimulationTerms, bondingCurveType, param1, param2, param3=None, save_results_path=None):
+        """
+        param1: m, param2: c, param3:n
+        """
         # Initialize properties
         # self.buyFunction = None  # Placeholder for function handle
         # self.sellFunction = None  # Placeholder for function handle
@@ -19,31 +22,30 @@ class Platform:
         self.numTokens = 0  # Initialize as 0, to be updated based on platform logic
         self.myAgents = []  # List to store Agent objects
         self.myTokens = []  # List to store Token objects
-        self.numSimulationMonths = numSimulationMonths
+        self.numSimulationTerms = numSimulationTerms
 
-        self.bonding_curve_obj = BondingCurve(bondingCurveType, param1_m=param1, param2_c=param2, param3_n=param3)
+        self.bonding_curve_obj = BondingCurve(bondingCurveType, param1, param2, param3)
         self.save_results_path = "/media/dataanalyticlab/Drive2/MANSOOR/DeFI-Agent/Code/Bonding-Curves/TBC-Agent-Based-Simulation/Results"
         
         start = timeit.default_timer()
         self.create_agents_and_tokens(self.bonding_curve_obj)
-        stop = timeit.default_timer()
-        time_new = stop - start
-        print("Agent creation time elapsed: ", time_new)
+        # stop = timeit.default_timer()
+        # time_new = stop - start
+        # print("Agent creation time elapsed: ", time_new)
 
-        start = timeit.default_timer()
+        # start = timeit.default_timer()
         self.run_simulation()
         stop = timeit.default_timer()
         time_new = stop - start
-        print(f"Simulation time elapsed for {numMonths} months : ", time_new)
+        print(f"Simulation time elapsed : ", time_new)
+        print(f"{self.bonding_curve_obj.functionType} bonding curve simulation completed for {self.numAgents} agents. Parameters: m={self.bonding_curve_obj.param1}, c = {self.bonding_curve_obj.param2}, n={self.bonding_curve_obj.param3}")
  
 
     def create_agents_and_tokens(self, bonding_curve_obj):
-        total_months = 60
-        total_years = total_months // 12
-        agent_id = 1
-        token_id = 1
+        agent_id = 0
+        token_id = 0
         j = 0
-        self.new_dir = f"{self.bonding_curve_obj.functionType}_TBC_{self.numAgents}Agents_For_{self.numSimulationMonths}Months"
+        self.new_dir = f"{self.bonding_curve_obj.functionType}_TBC_{self.numAgents}Agents_For_{self.numSimulationTerms}Terms_{self.bonding_curve_obj.param1}m_{self.bonding_curve_obj.param2}c_{self.bonding_curve_obj.param3}n"
         if not os.path.exists(os.path.join(self.save_results_path, self.new_dir)): # create a new directory for the specific simulation run files
             self.path = os.mkdir(os.path.join(self.save_results_path, self.new_dir)) 
         
@@ -56,25 +58,25 @@ class Platform:
         agent_purpose_categories = ["Investor", "Creator", "Utilizer", "Speculator"]
         my_agents_purpose_categories = random.choices(agent_purpose_categories, weights=[0.2, 0.1, 0.3, 0.4], k=self.numAgents)
 
-        tbl_token_types_5years_supply_cycles = pd.read_csv("TokenTypes_5Years_SupplyCycles.csv")
-        token_types_5years_expected_prices = np.zeros(tbl_token_types_5years_supply_cycles.shape)
+        tbl_token_types_3periods_supply_cycles = pd.read_csv("TokenTypes_3Periods_SupplyCycles.csv")
+        token_types_3periods_expected_prices = np.zeros(tbl_token_types_3periods_supply_cycles.shape)
 
-        for row in range(tbl_token_types_5years_supply_cycles.shape[0]):
-            for column in range(tbl_token_types_5years_supply_cycles.shape[1]):
-                token_types_5years_expected_prices[row, column] = bonding_curve_obj.buyFunction(tbl_token_types_5years_supply_cycles.iloc[row, column], bonding_curve_obj.param1, bonding_curve_obj.param2, bonding_curve_obj.param3)
+        for row in range(tbl_token_types_3periods_supply_cycles.shape[0]):
+            for column in range(tbl_token_types_3periods_supply_cycles.shape[1]):
+                token_types_3periods_expected_prices[row, column] = bonding_curve_obj.buyFunction(tbl_token_types_3periods_supply_cycles.iloc[row, column], bonding_curve_obj.param1, bonding_curve_obj.param2, bonding_curve_obj.param3)
 
         num_agents_born_per_term = [int(0.03 * self.numAgents), int(0.13 * self.numAgents), int(0.34 * self.numAgents), int(0.34 * self.numAgents), int(0.16 * self.numAgents)] # according to platform adoption life cycle
-        dob_ranges_per_term = [range(1,3), range(3,9), range(9,21), range(21,33), range(33,60)] # agents DOB ranges for each term
+        # dob_ranges_per_term = [range(1,3), range(3,9), range(9,21), range(21,33), range(33,60)] # agents DOB ranges for each term --- late adoption ALETHEA
+        dob_ranges_per_term = [range(1,5), range(5,13), range(13,21), range(21,29), range(29,33)] # early adoption ALETHEA (agents created in first 8 months = 32 weeks/terms)
         
         self.myAgents = [None] * self.numAgents
         for term in range(0, len(num_agents_born_per_term)):
             for i in range(num_agents_born_per_term[term]):
                 DOB = random.choices(dob_ranges_per_term[term])[0]
-                new_agent = Agent(agent_id, my_agents_purpose_categories[j], DOB, 0 )
+                new_agent = Agent(agent_id, my_agents_purpose_categories[j], DOB, None )
                 
                 if new_agent.purposeCategory == "Creator":
-                    life_cycle_curve_shape_id = random.choice(range(1, 29))
-                    new_token = Token(token_id, agent_id, token_types_5years_expected_prices, life_cycle_curve_shape_id, new_agent.dayOfBirth, new_agent.dayOfPassing)
+                    new_token = Token(token_id, agent_id, token_types_3periods_expected_prices, new_agent.dayOfBirth, new_agent.dayOfPassing)
                     self.myTokens.append(new_token)
                     new_agent.ownTokenId = token_id
                     myTokensfileID.write(f"{new_token.tokenID} {new_token.ownerAgentID} {new_token.lifeCycleCurveShape} {new_agent.dayOfBirth} {new_agent.dayOfPassing}\n")
@@ -92,41 +94,44 @@ class Platform:
 
 
     def run_simulation(self):
-        numSimulationMinutesPerMonth = 30*24*60
-        fileID = open(f'Results/{self.new_dir}/Transactions_log_{self.bonding_curve_obj.functionType}_{self.numAgents}Agents_{self.numSimulationMonths}Months.txt', 'w')
-        fileID.write('%s %s %s %s %s %s %s %s %s %s\n' % ('TransactionID', 'AgentID', 'AgentLiquidity', 'TransactionType', 'DeltaSupply', 'TokenID', 'TokenCurrentBuyPrice', 'TokenCurrentSellPrice', 'TokenCurrentSupply', 'SimulationMonth'))
+        numSimulationStepsPerTerm = 7*24*60*60 # seconds per week/term
+        transactionsLogFileID = open(f'Results/{self.new_dir}/Transactions_log_{self.bonding_curve_obj.functionType}_{self.numAgents}Agents_{self.numSimulationTerms}Terms.txt', 'w')
+        transactionsLogFileID.write('%s %s %s %s %s %s %s %s %s %s\n' % ('TransactionID', 'AgentID', 'AgentLiquidity', 'TransactionType', 'DeltaSupply', 'TokenID', 'TokenCurrentBuyPrice', 'TokenCurrentSellPrice', 'TokenCurrentSupply', 'SimulationTerm'))
+
+        agentsWealthDataPerTerm = open(f'Results/{self.new_dir}/Agents_Wealth_Data_{self.bonding_curve_obj.functionType}_{self.numAgents}Agents_{self.numSimulationTerms}Terms.txt', 'w')
+        agentIDs = ' '.join(map(str, [int(agentID) for agentID in range(self.numAgents)]))
+        agentsWealthDataPerTerm.write(agentIDs + "\n")
 
         transactionID = 0
-        for simulationMonth in range(1, self.numSimulationMonths + 1):
+        for simulationTerm in range(0, self.numSimulationTerms):
             
             aliveAgents_dict = dict()
             aliveTokensIDs = [] # [None] * alive_tokens_count
             for i in range(len(self.myAgents)):
-                if ((self.myAgents[i].dayOfBirth <= simulationMonth) and (self.myAgents[i].dayOfPassing >= simulationMonth)):
+                if ((self.myAgents[i].dayOfBirth <= simulationTerm) or (self.myAgents[i].dayOfPassing >= simulationTerm)):
                     if (self.myAgents[i].purposeCategory != "Creator"):
                         aliveAgents_dict[self.myAgents[i].agentID] = self.myAgents[i].proActiveness
                     else:
                         aliveTokensIDs.append(self.myAgents[i].ownTokenId)
             
             if (len(aliveTokensIDs)==0) or (len(aliveAgents_dict)==0): # check if there is no alive token
-                print("No alive token or agent, skip this transaction step!!")
+                # print("No alive token or agent, skip this transaction step!!")
                 continue 
 
             # compute the expected prices of all tokens for alive fundy agents
-            for i, fundyAgent in enumerate(list(aliveAgents_dict.keys())):
+            for fundyAgent in list(aliveAgents_dict.keys()):
                 if self.myAgents[fundyAgent].strategyType == "fundy":
-                        self.myAgents[fundyAgent].currentMonthAllTokensExpectedPrices_Fundy = [None]*len(aliveTokensIDs)
+                        self.myAgents[fundyAgent].currentTermAllTokensExpectedPrices_Fundy = [0]*len(aliveTokensIDs)
                         # Compute the expected prices of all tokens
                         for j, tokenID in enumerate(aliveTokensIDs):
-                            # print("AgentID:", self.myAgents[fundyAgent])
-                            # print("TokenID", self.myTokens[tokenID])
-                            exp_price = sum(w * fp * (1 - self.myAgents[fundyAgent].intelligenceGap) for w, fp in zip(
-                                self.myAgents[fundyAgent].monthlyWeights4ExpPrice_Fundy[:self.myAgents[fundyAgent].numTermsForeseen_Fundy],
-                                self.myTokens[tokenID].monthlyFairPrices_5years[:self.myAgents[fundyAgent].numTermsForeseen_Fundy]))
-                            self.myAgents[fundyAgent].currentMonthAllTokensExpectedPrices_Fundy[j]= round(exp_price, 2)
-                        # print("Tokens expected prices (fundy) ", fundyAgent.currentMonthAllTokensExpectedPrices_Fundy)
+                            # exp price = w_i * fp_i * (1 +- N(IG, 0.02))
+                            exp_price = sum(w * fp * (1 + (random.choices([1,-1])[0] * np.random.normal(self.myAgents[fundyAgent].intelligenceGap, 0.02))) for w, fp in zip(
+                                self.myAgents[fundyAgent].weights4ExpPricePerTerm_Fundy[:self.myAgents[fundyAgent].numTermsForeseen_Fundy],
+                                self.myTokens[tokenID].fairPricesPerTerm_3periods[simulationTerm-self.myTokens[tokenID].dayOfBirth :self.myAgents[fundyAgent].numTermsForeseen_Fundy]))
+                            self.myAgents[fundyAgent].currentTermAllTokensExpectedPrices_Fundy[j]= round(exp_price, 2)
+                        # print("Tokens expected prices (fundy) ", fundyAgent.currentTermAllTokensExpectedPrices_Fundy)
 
-            for minute in range(numSimulationMinutesPerMonth):
+            for step in range(numSimulationStepsPerTerm):
                 keys = list(aliveAgents_dict.keys())
                 weights = [aliveAgents_dict[a] for a in keys]
                 transactingAgentID = random.choices(keys, weights=weights)[0]
@@ -161,7 +166,7 @@ class Platform:
                     elif transactingAgent.strategyType == "fundy":
 
                         # Calculate the price gaps
-                        tokensPriceGaps = [exp_price - self.myTokens[tokenID].currentBuyPrice for exp_price, tokenID in zip(transactingAgent.currentMonthAllTokensExpectedPrices_Fundy, aliveTokensIDs )]
+                        tokensPriceGaps = [exp_price - self.myTokens[tokenID].currentBuyPrice for exp_price, tokenID in zip(transactingAgent.currentTermAllTokensExpectedPrices_Fundy, aliveTokensIDs )]
                         maxPriceGap_AllTokens = max(tokensPriceGaps) if tokensPriceGaps else float('-inf')
 
                         if transactingAgentHoldings > 0:
@@ -187,18 +192,18 @@ class Platform:
                                 transactingTokenID = tokensPriceGaps.index(maxPriceGap_AllTokens)
                                 action = "buy"
                     elif transactingAgent.strategyType == "charty":
-                        transactingAgent.currentMonthAllTokensExpectedPrices_Charty = [None]*len(aliveTokensIDs)
+                        transactingAgent.currentTermAllTokensExpectedPrices_Charty = [None]*len(aliveTokensIDs)
                         # Compute the expected prices of all tokens
                         for i, tokenID in enumerate(aliveTokensIDs):
-                            hindsightWeights = transactingAgent.monthlyWeights4MvngAvg_Charty
-                            averageMonthlyPrices = self.myTokens[tokenID].monthlyPastAveragePrices_5years[:transactingAgent.numHindsightTerms_Charty]
-                            weightedMonthlyPrices = sum([w * p for w, p in zip(hindsightWeights, averageMonthlyPrices)])
-                            expected_price = (self.myTokens[tokenID].currentBuyPrice + weightedMonthlyPrices) / 2
-                            transactingAgent.currentMonthAllTokensExpectedPrices_Charty[i] = expected_price
+                            hindsightWeights = transactingAgent.weights4MvngAvgPerTerm_Charty
+                            averagePricesPerTerm = self.myTokens[tokenID].pastAveragePricesPerTerm_3periods[simulationTerm-self.myTokens[tokenID].dayOfBirth :transactingAgent.numHindsightTerms_Charty]
+                            weightedPricesPerTerm = sum([w * p for w, p in zip(hindsightWeights, averagePricesPerTerm)])
+                            expected_price = (self.myTokens[tokenID].currentBuyPrice + weightedPricesPerTerm) / 2
+                            transactingAgent.currentTermAllTokensExpectedPrices_Charty[i] = expected_price
                         # print("Tokens expected prices (charty) ", allTokensExpectedPrices)
 
                         # Calculate the price gaps
-                        tokensPriceGaps = [exp_price - self.myTokens[tokenID].currentBuyPrice for exp_price, tokenID in zip(transactingAgent.currentMonthAllTokensExpectedPrices_Charty, aliveTokensIDs)]
+                        tokensPriceGaps = [exp_price - self.myTokens[tokenID].currentBuyPrice for exp_price, tokenID in zip(transactingAgent.currentTermAllTokensExpectedPrices_Charty, aliveTokensIDs)]
 
                         maxPriceGap_AllTokens = max(tokensPriceGaps) if tokensPriceGaps else float('-inf')
 
@@ -239,37 +244,38 @@ class Platform:
                         deltaSupply /= 2
                         costDeltaSupply = self.bonding_curve_obj.costDeltaSupply(self.myTokens[transactingTokenID].currentSupply, 
                                                                         self.bonding_curve_obj.param1, self.bonding_curve_obj.param2, deltaSupply, self.bonding_curve_obj.param3)
+                        # print("cost delta supply computing...")
 
                     # Update the transacting token records
-                    token = self.myTokens[transactingTokenID]
-                    token.currentSupply += deltaSupply
-                    token.currentBuyPrice = self.bonding_curve_obj.buyFunction(token.currentSupply, self.bonding_curve_obj.param1, self.bonding_curve_obj.param2, self.bonding_curve_obj.param3)
-                    token.currentSellPrice = self.bonding_curve_obj.sellFunction(token.currentSupply, self.bonding_curve_obj.param1, self.bonding_curve_obj.param2, self.bonding_curve_obj.param3)
-                    token.currentMonthPriceRunningSum += token.currentSellPrice
-                    token.currentMonthNumTransactionsRunningCount += 1
+                    # token = self.myTokens[transactingTokenID]
+                    self.myTokens[transactingTokenID].currentSupply += deltaSupply
+                    self.myTokens[transactingTokenID].currentBuyPrice = self.bonding_curve_obj.buyFunction(self.myTokens[transactingTokenID].currentSupply, self.bonding_curve_obj.param1, self.bonding_curve_obj.param2, self.bonding_curve_obj.param3)
+                    self.myTokens[transactingTokenID].currentSellPrice = self.bonding_curve_obj.sellFunction(self.myTokens[transactingTokenID].currentSupply, self.bonding_curve_obj.param1, self.bonding_curve_obj.param2, self.bonding_curve_obj.param3)
+                    self.myTokens[transactingTokenID].currentTermPriceRunningSum += self.myTokens[transactingTokenID].currentSellPrice
+                    self.myTokens[transactingTokenID].currentTermNumTransactionsRunningCount += 1
 
-                    # Update high and low prices for the month
-                    if token.currentBuyPrice > token.currentMonthHighestPrice:
-                        token.currentMonthHighestPrice = token.currentBuyPrice
-                    if token.currentMonthLowestPrice == 0 or token.currentBuyPrice < token.currentMonthLowestPrice:
-                        token.currentMonthLowestPrice = token.currentBuyPrice
+                    # Update high and low prices for the Term
+                    if self.myTokens[transactingTokenID].currentBuyPrice > self.myTokens[transactingTokenID].currentTermHighestPrice:
+                        self.myTokens[transactingTokenID].currentTermHighestPrice = self.myTokens[transactingTokenID].currentBuyPrice
+                    if self.myTokens[transactingTokenID].currentTermLowestPrice == 0 or self.myTokens[transactingTokenID].currentBuyPrice < self.myTokens[transactingTokenID].currentTermLowestPrice:
+                        self.myTokens[transactingTokenID].currentTermLowestPrice = self.myTokens[transactingTokenID].currentBuyPrice
 
                     # Update the transacting agent records
-                    if transactingTokenID in transactingAgent.tokenHoldings.keys():
-                        transactingAgent.tokenHoldings[transactingTokenID] += deltaSupply
+                    if transactingTokenID in self.myAgents[transactingAgentID].tokenHoldings.keys():
+                        self.myAgents[transactingAgentID].tokenHoldings[transactingTokenID] += deltaSupply
                     else:
-                        transactingAgent.tokenHoldings[transactingTokenID] = deltaSupply
+                        self.myAgents[transactingAgentID].tokenHoldings[transactingTokenID] = deltaSupply
         
-                    transactingAgent.liquidity -= costDeltaSupply
+                    self.myAgents[transactingAgentID].liquidity -= costDeltaSupply
 
                     # Log transaction
-                    fileID.write(f"{transactionID} {transactingAgent.agentID} {transactingAgent.liquidity} buy {deltaSupply} {token.tokenID} "
-                                f"{token.currentBuyPrice} {token.currentSellPrice} {token.currentSupply} {simulationMonth}\n")
+                    transactionsLogFileID.write(f"{transactionID} {self.myAgents[transactingAgentID].agentID} {self.myAgents[transactingAgentID].liquidity} buy {deltaSupply} {self.myTokens[transactingTokenID].tokenID} "
+                                f"{self.myTokens[transactingTokenID].currentBuyPrice} {self.myTokens[transactingTokenID].currentSellPrice} {self.myTokens[transactingTokenID].currentSupply} {simulationTerm}\n")
                     transactionID +=1
 
                 elif action == "sell":
                     # print("Selling token ID: ", transactingTokenID)
-                    currentHoldingsTransactingToken = transactingAgent.tokenHoldings[transactingTokenID] # get the current supply of the held token to be selled
+                    currentHoldingsTransactingToken = self.myAgents[transactingAgentID].tokenHoldings[transactingTokenID] # get the current supply of the held token to be selled
                     deltaSupply = random.random()
                     # print("Token ID: ", transactingTokenID)
                     # print(len(self.myTokens))
@@ -277,102 +283,132 @@ class Platform:
                     # Check if the cost is within the available liquidity
                     while deltaSupply > currentHoldingsTransactingToken:
                         deltaSupply /= 2
+                        # print("delta supply computing...")
                     
                     costDeltaSupply = self.bonding_curve_obj.costDeltaSupply(self.myTokens[transactingTokenID].currentSupply, 
                                                                         self.bonding_curve_obj.param1, self.bonding_curve_obj.param2, deltaSupply, self.bonding_curve_obj.param3)
 
                     # Update the transacting token records
-                    token = self.myTokens[transactingTokenID]
-                    token.currentSupply -= deltaSupply
-                    token.currentBuyPrice = self.bonding_curve_obj.buyFunction(token.currentSupply, self.bonding_curve_obj.param1, self.bonding_curve_obj.param2, self.bonding_curve_obj.param3)
-                    token.currentSellPrice = self.bonding_curve_obj.sellFunction(token.currentSupply, self.bonding_curve_obj.param1, self.bonding_curve_obj.param2, self.bonding_curve_obj.param3)
-                    token.currentMonthPriceRunningSum += token.currentSellPrice
-                    token.currentMonthNumTransactionsRunningCount += 1
+                    # token = self.myTokens[transactingTokenID]
+                    self.myTokens[transactingTokenID].currentSupply -= deltaSupply
+                    self.myTokens[transactingTokenID].currentBuyPrice = self.bonding_curve_obj.buyFunction(self.myTokens[transactingTokenID].currentSupply, self.bonding_curve_obj.param1, self.bonding_curve_obj.param2, self.bonding_curve_obj.param3)
+                    self.myTokens[transactingTokenID].currentSellPrice = self.bonding_curve_obj.sellFunction(self.myTokens[transactingTokenID].currentSupply, self.bonding_curve_obj.param1, self.bonding_curve_obj.param2, self.bonding_curve_obj.param3)
+                    self.myTokens[transactingTokenID].currentTermPriceRunningSum += self.myTokens[transactingTokenID].currentSellPrice
+                    self.myTokens[transactingTokenID].currentTermNumTransactionsRunningCount += 1
 
-                    # Update high and low prices for the month
-                    if token.currentBuyPrice > token.currentMonthHighestPrice:
-                        token.currentMonthHighestPrice = token.currentBuyPrice
-                    if token.currentMonthLowestPrice == 0:
-                        token.currentMonthLowestPrice = token.currentBuyPrice
-                    if token.currentBuyPrice < token.currentMonthLowestPrice:
-                        token.currentMonthLowestPrice = token.currentBuyPrice
+                    # Update high and low prices for the Term
+                    if self.myTokens[transactingTokenID].currentBuyPrice > self.myTokens[transactingTokenID].currentTermHighestPrice:
+                        self.myTokens[transactingTokenID].currentTermHighestPrice = self.myTokens[transactingTokenID].currentBuyPrice
+                    if self.myTokens[transactingTokenID].currentTermLowestPrice == 0:
+                        self.myTokens[transactingTokenID].currentTermLowestPrice = self.myTokens[transactingTokenID].currentBuyPrice
+                    if self.myTokens[transactingTokenID].currentBuyPrice < self.myTokens[transactingTokenID].currentTermLowestPrice:
+                        self.myTokens[transactingTokenID].currentTermLowestPrice = self.myTokens[transactingTokenID].currentBuyPrice
 
                     # Update the transacting agent records
-                    # if transactingTokenID in transactingAgent.tokenHoldings:
-                    transactingAgent.tokenHoldings[transactingTokenID] -= deltaSupply
-                    # else:
-                        # transactingAgent.tokenHoldings[transactingTokenID] = deltaSupply
-                    transactingAgent.liquidity += costDeltaSupply
+                    self.myAgents[transactingAgentID].tokenHoldings[transactingTokenID] -= deltaSupply
+                    self.myAgents[transactingAgentID].liquidity += costDeltaSupply
 
                     # Log transaction
-                    fileID.write(f"{transactionID} {transactingAgent.agentID} {transactingAgent.liquidity} sell {deltaSupply} {token.tokenID} "
-                                f"{token.currentBuyPrice} {token.currentSellPrice} {token.currentSupply} {simulationMonth}\n")
+                    transactionsLogFileID.write(f"{transactionID} {self.myAgents[transactingAgentID].agentID} {self.myAgents[transactingAgentID].liquidity} sell {deltaSupply} {self.myTokens[transactingTokenID].tokenID} "
+                                f"{self.myTokens[transactingTokenID].currentBuyPrice} {self.myTokens[transactingTokenID].currentSellPrice} {self.myTokens[transactingTokenID].currentSupply} {simulationTerm}\n")
                     transactionID +=1
 
-            for i, agent_id in enumerate(aliveAgents_dict.keys()): # token supply clearance of inactive agents
-                if (self.myAgents[agent_id].dayOfPassing == simulationMonth):
+            # update the price statistics of tokens to be used by charty agents
+            for tokenID in range(len(self.myTokens)):
+                if self.myTokens[tokenID].currentTermNumTransactionsRunningCount > 0:
+                    self.myTokens[tokenID].pastAveragePricesPerTerm_3periods[simulationTerm] =  self.myTokens[tokenID].currentTermPriceRunningSum/self.myTokens[tokenID].currentTermNumTransactionsRunningCount
+                    self.myTokens[tokenID].pastHighPricesPerTerm_3periods[simulationTerm] = self.myTokens[tokenID].currentTermHighestPrice
+                    self.myTokens[tokenID].pastLowPricesPerTerm_3periods[simulationTerm] = self.myTokens[tokenID].currentTermLowestPrice
+                self.myTokens[tokenID].currentTermPriceRunningSum = 0
+                self.myTokens[tokenID].currentTermNumTransactionsRunningCount = 0
+                self.myTokens[tokenID].currentTermHighestPrice = 0
+                self.myTokens[tokenID].currentTermLowestPrice = 0
+                
+            # compute the net wealth of alive agents
+            netClosingWealthCurrentTermAllTokens = [0]*self.numAgents
+            for i, agent_id in enumerate(aliveAgents_dict.keys()): 
+                tokensWorth = 0
+                if len(self.myAgents[agent_id].tokenHoldings) > 0:
+                    for tokenID in list(self.myAgents[agent_id].tokenHoldings.keys()): # loop through the holdings of the current agent
+                        tokensWorth += self.myAgents[agent_id].tokenHoldings[tokenID] * self.myTokens[tokenID].currentBuyPrice
+                netClosingWealthCurrentTermAllTokens[agent_id] = self.myAgents[agent_id].liquidity + tokensWorth
+            netClosingWealthCurrentTermAllTokens = ' '.join(map(str, netClosingWealthCurrentTermAllTokens))
+            agentsWealthDataPerTerm.write(netClosingWealthCurrentTermAllTokens + "\n")
+                    
+            # self.tokenClearanceDyingAgents(aliveAgents_dict, simulationTerm, transactionsLogFileID)
+            # transactionID +=1
+            # print(f'Simulation Term {simulationTerm} completed...')
+
+        transactionsLogFileID.close()
+        agentsWealthDataPerTerm.close()
+    
+    def tokenClearanceDyingAgents(self, aliveAgents_dict, simulationTerm, transactionID, transactionsLogFileID):
+        for i, agent_id in enumerate(aliveAgents_dict.keys()): # token supply clearance of inactive agents
+                if (self.myAgents[agent_id].dayOfPassing == simulationTerm) and self.myAgents[agent_id].purposeCategory != "Utilizer":
                     for clearingTokenID in list(self.myAgents[agent_id].tokenHoldings.keys()):
                         deltaSupply = self.myAgents[agent_id].tokenHoldings[clearingTokenID] # return the total holdings of the particular token
                         costDeltaSupply = self.bonding_curve_obj.costDeltaSupply(self.myTokens[clearingTokenID].currentSupply, 
                                                                         self.bonding_curve_obj.param1, self.bonding_curve_obj.param2, deltaSupply, self.bonding_curve_obj.param3)
                         # Update the transacting token records
-                        token = self.myTokens[clearingTokenID]
-                        token.currentSupply -= deltaSupply
-                        token.currentBuyPrice = self.bonding_curve_obj.buyFunction(token.currentSupply, self.bonding_curve_obj.param1, self.bonding_curve_obj.param2, self.bonding_curve_obj.param3)
-                        token.currentSellPrice = self.bonding_curve_obj.sellFunction(token.currentSupply, self.bonding_curve_obj.param1, self.bonding_curve_obj.param2, self.bonding_curve_obj.param3)
-                        token.currentMonthPriceRunningSum += token.currentSellPrice
-                        token.currentMonthNumTransactionsRunningCount += 1
+                        # token = self.myTokens[clearingTokenID]
+                        self.myTokens[clearingTokenID].currentSupply -= deltaSupply
+                        self.myTokens[clearingTokenID].currentBuyPrice = self.bonding_curve_obj.buyFunction(self.myTokens[clearingTokenID].currentSupply, self.bonding_curve_obj.param1, self.bonding_curve_obj.param2, self.bonding_curve_obj.param3)
+                        self.myTokens[clearingTokenID].currentSellPrice = self.bonding_curve_obj.sellFunction(self.myTokens[clearingTokenID].currentSupply, self.bonding_curve_obj.param1, self.bonding_curve_obj.param2, self.bonding_curve_obj.param3)
+                        self.myTokens[clearingTokenID].currentTermPriceRunningSum += self.myTokens[clearingTokenID].currentSellPrice
+                        self.myTokens[clearingTokenID].currentTermNumTransactionsRunningCount += 1
 
-                        # Update high and low prices for the month
-                        if token.currentBuyPrice > token.currentMonthHighestPrice:
-                            token.currentMonthHighestPrice = token.currentBuyPrice
-                        if token.currentMonthLowestPrice == 0:
-                            token.currentMonthLowestPrice = token.currentBuyPrice
-                        if token.currentBuyPrice < token.currentMonthLowestPrice:
-                            token.currentMonthLowestPrice = token.currentBuyPrice
+                        # Update high and low prices for the Term
+                        if self.myTokens[clearingTokenID].currentBuyPrice > self.myTokens[clearingTokenID].currentTermHighestPrice:
+                            self.myTokens[clearingTokenID].currentTermHighestPrice = self.myTokens[clearingTokenID].currentBuyPrice
+                        if self.myTokens[clearingTokenID].currentTermLowestPrice == 0:
+                            self.myTokens[clearingTokenID].currentTermLowestPrice = self.myTokens[clearingTokenID].currentBuyPrice
+                        if self.myTokens[clearingTokenID].currentBuyPrice < self.myTokens[clearingTokenID].currentTermLowestPrice:
+                            self.myTokens[clearingTokenID].currentTermLowestPrice = self.myTokens[clearingTokenID].currentBuyPrice
 
                         # Update the clearing agent's records
                         self.myAgents[agent_id].tokenHoldings[clearingTokenID] -= deltaSupply
                         self.myAgents[agent_id].liquidity += costDeltaSupply
 
                         # Log transaction
-                        fileID.write(f"{transactionID} {self.myAgents[agent_id].agentID} {self.myAgents[agent_id].liquidity} clearance {deltaSupply} {token.tokenID} "
-                                    f"{token.currentBuyPrice} {token.currentSellPrice} {token.currentSupply} {simulationMonth}\n")
-                        transactionID +=1
+                        transactionsLogFileID.write(f"{transactionID} {self.myAgents[agent_id].agentID} {self.myAgents[agent_id].liquidity} sell {deltaSupply} {self.myTokens[clearingTokenID].tokenID} "
+                                    f"{self.myTokens[clearingTokenID].currentBuyPrice} {self.myTokens[clearingTokenID].currentSellPrice} {self.myTokens[clearingTokenID].currentSupply} {simulationTerm}\n")
 
-
-                    
-
-            print(f'Simulation month {simulationMonth} completed...')
-
-        fileID.close()
 
 
 if __name__ == '__main__':
-    param1 = 5
-    param2 = 0
-    param3 = 2
+    # param1 = 50
+    # param2 = 30
+    # param3 = 60
+    # linear & polynomial --- param1: m, param2: c, param3: n
+    #     sigmoid --- param1: c, param2: c1, param3: c2 
 
     # Parse command line arguments
     parser = argparse.ArgumentParser(description="Run simulations for a multi-token economy system..",
                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("numAgents", type=int, help="Number of agents", nargs='?', default=500, const=500)
-    parser.add_argument("numMonths", type=int, help="Number of months for simulation", nargs='?', default=48, const=48)
+    parser.add_argument("numTerms", type=int, help="Number of terms for simulation", nargs='?', default=48, const=48)
     parser.add_argument("bondingCurve", type=str, help="Type of bonding curve")
+    parser.add_argument("param1", type=int, help="param1")
+    parser.add_argument("param2", type=int, help="param2")
+    parser.add_argument("param3", type=int, help="param3")
     # parser.add_argument("batchSize", type=int, help="Batch size")
     
 
     args = vars(parser.parse_args())
     numAgents = args["numAgents"]
-    numMonths = args["numMonths"]
+    numTerms = args["numTerms"]
     bondingCurve = args["bondingCurve"]
+    param1 = args["param1"]
+    param2 = args["param2"]
+    param3 = args["param3"]
+    
 
 
-    platform = Platform(numAgents, numMonths, bondingCurve, param1, param2, param3)
+    platform = Platform(numAgents, numTerms, bondingCurve, param1, param2, param3)
     
 
 # for agent in p.myAgents:
-#     # if agent.strategyType == "fundy" and len(agent.currentMonthAllTokensExpectedPrices_Fundy) > 0:
-#     if agent.strategyType == "charty" and len(agent.currentMonthAllTokensExpectedPrices_Charty) > 0:
+#     # if agent.strategyType == "fundy" and len(agent.currentTermAllTokensExpectedPrices_Fundy) > 0:
+#     if agent.strategyType == "charty" and len(agent.currentTermAllTokensExpectedPrices_Charty) > 0:
 #     # if agent.purposeCategory == "Creator":
 #         print(agent)

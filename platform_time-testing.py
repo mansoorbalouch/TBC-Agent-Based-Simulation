@@ -16,19 +16,34 @@ def run_script(args):
 
 if __name__ == "__main__":
     num_agents_list = [1000, 5000, 10000]
-    bondingCurves = ["linear", "polynomial"]
-    params1 = [2, 10]
-    params2 = [5, 20]
-    params3 = [1, 2]
+    bondingCurves = ["linear", "polynomial", "sublinear", "sigmoid"]
+    params1 = [2, 150] # m or c
+    params2 = [0, 300] # c or a
+    params3 = [1, 2, 3, 200] # n or b
 
     # Generate all combinations of parameters
     # all_combinations = list(itertools.product(num_agents_list, bondingCurves, params1, params2, params3))
     all_combinations = [(num_agents_list[0], bondingCurves[0], params1[0], params2[0], params3[0]),
+                        (num_agents_list[1], bondingCurves[0], params1[0], params2[0], params3[0]),
+                        (num_agents_list[2], bondingCurves[0], params1[0], params2[0], params3[0]),
                     (num_agents_list[0], bondingCurves[1], params1[0], params2[0], params3[1]),
-                    (num_agents_list[1], bondingCurves[0], params1[0], params2[0], params3[0]),
                     (num_agents_list[1], bondingCurves[1], params1[0], params2[0], params3[1]),
-                    (num_agents_list[2], bondingCurves[0], params1[0], params2[0], params3[0]),
-                    (num_agents_list[2], bondingCurves[1], params1[0], params2[0], params3[1])]
+                    (num_agents_list[2], bondingCurves[1], params1[0], params2[0], params3[1]),
+                    (num_agents_list[0], bondingCurves[2], params1[0], params2[0], params3[2]),
+                    (num_agents_list[1], bondingCurves[2], params1[0], params2[0], params3[2]),
+                    (num_agents_list[2], bondingCurves[2], params1[0], params2[0], params3[2]),
+                    (num_agents_list[0], bondingCurves[3], params1[1], params2[1], params3[3]),
+                    (num_agents_list[1], bondingCurves[3], params1[1], params2[1], params3[3]),
+                    (num_agents_list[2], bondingCurves[3], params1[1], params2[1], params3[3])]
+
+    # # Generate all combinations of parameters
+    # # all_combinations = list(itertools.product(num_agents_list, bondingCurves, params1, params2, params3))
+    # all_combinations = [(num_agents_list[0], bondingCurves[0], params1[0], params2[0], params3[0]),
+    #                 (num_agents_list[0], bondingCurves[1], params1[0], params2[0], params3[1]),
+    #                 (num_agents_list[1], bondingCurves[0], params1[0], params2[0], params3[0]),
+    #                 (num_agents_list[1], bondingCurves[1], params1[0], params2[0], params3[1]),
+    #                 (num_agents_list[2], bondingCurves[0], params1[0], params2[0], params3[0]),
+    #                 (num_agents_list[2], bondingCurves[1], params1[0], params2[0], params3[1])]
 
     # Use a multiprocessing Pool to run the script in parallel for each combination
     with Pool() as pool:

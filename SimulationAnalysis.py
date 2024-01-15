@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import glob
-import random
+import random, re
 
 class SimulationAnalysis:
 
@@ -10,28 +10,42 @@ class SimulationAnalysis:
 
         # Read the data from the file
         path = "/media/dataanalyticlab/Drive2/MANSOOR/DeFI-Agent/Code/Bonding-Curves/TBC-Agent-Based-Simulation/"
-        
-        simulation_dir = "linear_TBC_10000Agents_For_144Terms_2m_5c_1n"
-        results_file_paths = glob.glob(f"{path}Results/{simulation_dir}/*")
-        agents_wealth_file_path = results_file_paths[0]
-        tokens_file_path = results_file_paths[1]
-        agents_file_path = results_file_paths[2]
-        transactions_file_path = results_file_paths[3]
-        bondingCurveType = "Linear"
-        # bondingCurveType = "Quadratic"
+        sim_results_dirs = glob.glob(f"{path}Results/*")
         
         save_figures_path_path = path + "Figures/"
+
+        for simulation_dir in range(len(sim_results_dirs)):
+            results_file_paths = glob.glob(f"{sim_results_dirs[simulation_dir]}/*")
+            agents_wealth_file_path = results_file_paths[0]
+            tokens_file_path = results_file_paths[1]
+            agents_file_path = results_file_paths[2]
+            transactions_file_path = results_file_paths[3]
+            bondingCurveType = re.search(r"Results/(.*?)_TBC" , sim_results_dirs[simulation_dir]).group(1).capitalize()
+            fname = re.search(r"Results/(.*)" , sim_results_dirs[simulation_dir]).group(1)
+            
+            ################## Agent-wise Analysis ###################
+            self.plot_agent_wealth_over_time_by_purpose_category(agents_wealth_file_path, agents_file_path, save_figures_path_path, 
+                                                                f"Agent_wealth_over_time_by_purpose_category_{fname}", f'({bondingCurveType} Bonding Curve)')
+            
+            self.plot_agent_net_wealth_diff_by_purpose_category(agents_wealth_file_path, agents_file_path, save_figures_path_path, 
+                                                                f"Agent_wealth_gained_lost_by_purpose_category_{fname}", f'({bondingCurveType} Bonding Curve)')
+            
+            # ################## Token-wise Analysis ######################
+            self.plot_token_price_time_series_by_life_cycle_type(transactions_file_path, tokens_file_path, save_figures_path_path, 
+                                                                f"Tokens_price_time_series_by_life_cycle_type_{fname}", f'({bondingCurveType} Bonding Curve)')
+
+        # price_time_series_data = self.read_token_price_time_series(transactions_file_path)
+        # self.plot_token_price_time_series(save_figures_path_path, price_time_series_data, f"Tokens_price_time_series_{bondingCurveType}", f'({bondingCurveType} Bonding Curve)')
         
-        ################## Agent-wise Analysis ###################
+        # token_supply_by_curve_shape_data = self.read_token_supply_by_curve_shape(transactions_file_path, tokens_file_path)
+        # self.plot_token_supply_by_curve_shape(save_figures_path_path, token_supply_by_curve_shape_data, f"Token_supply_by_curve_shape_{simulation_dir}", f"({bondingCurveType} Bonding Curve)")
+
+        # tokens_current_supplies = self.read_tokens_latest_supply(transactions_file_path)
+        # self.plot_tokens_latest_supply_hist(save_figures_path_path, tokens_current_supplies, f"Tokens_supply_{bondingCurveType}")
+
         # agent_liquidity_data = self.plot_agents_distribution(agents_file_path, save_figures_path_path, f"Agents_distribution_by_type_{simulation_dir}")
         # self.plot_agents_distribution(agent_liquidity_data, save_figures_path_path, f"Agents_distribution_by_type_(2m_2c_0n)")
 
-        self.plot_agent_wealth_over_time_by_purpose_category(agents_wealth_file_path, agents_file_path, save_figures_path_path, 
-                                                             f"Agent_wealth_over_time_by_purpose_category_{simulation_dir}", f'({bondingCurveType} Bonding Curve)')
-        
-        self.plot_agent_net_wealth_diff_by_purpose_category(agents_wealth_file_path, agents_file_path, save_figures_path_path, 
-                                                             f"Agent_wealth_gained_lost_by_purpose_category_{simulation_dir}", f'({bondingCurveType} Bonding Curve)')
-        
         # self.plot_agent_liquidity_time_series_by_purpose_category(transactions_file_path, agents_file_path, save_figures_path_path, 
         #                                                      f"Agent_liquidity_over_time_by_purpose_category_{simulation_dir}", f'({bondingCurveType} Bonding Curve)')
 
@@ -41,20 +55,6 @@ class SimulationAnalysis:
         # # agent_liquidity_data = self.read_agent_liquidity(transactions_file_path)
         # # self.plot_agent_liquidity(save_figures_path_path, agent_liquidity_data, f"Agents_liquidity_{bondingCurveType}", f'({bondingCurveType} Bonding Curve)')
 
-        # ################## Token-wise Analysis ######################
-        # self.plot_token_price_time_series_by_life_cycle_type(transactions_file_path, tokens_file_path, save_figures_path_path, 
-                                                            #  f"Tokens_price_time_series_by_life_cycle_type_{simulation_dir}", f'({bondingCurveType} Bonding Curve)')
-
-        # # price_time_series_data = self.read_token_price_time_series(transactions_file_path)
-        # # self.plot_token_price_time_series(save_figures_path_path, price_time_series_data, f"Tokens_price_time_series_{bondingCurveType}", f'({bondingCurveType} Bonding Curve)')
-        
-        # token_supply_by_curve_shape_data = self.read_token_supply_by_curve_shape(transactions_file_path, tokens_file_path)
-        # self.plot_token_supply_by_curve_shape(save_figures_path_path, token_supply_by_curve_shape_data, f"Token_supply_by_curve_shape_{simulation_dir}", f"({bondingCurveType} Bonding Curve)")
-
-        # tokens_current_supplies = self.read_tokens_latest_supply(transactions_file_path)
-        # self.plot_tokens_latest_supply_hist(save_figures_path_path, tokens_current_supplies, f"Tokens_supply_{bondingCurveType}")
-
-        # plt.show()
 
     ############## Agent-wise analysis ###########
     def plot_agents_distribution(self, file_path, save_figures_path, fname):
@@ -93,7 +93,7 @@ class SimulationAnalysis:
             sns.lineplot(agents_wealth_df.iloc[int(agend_id), :-1], label=type)
 
         plt.title(f'Agent Wealth Changes Over Time {title}', weight='bold', fontsize=18)
-        plt.xlabel('Time (weeks)', fontweight='bold', fontsize=18)
+        plt.xlabel('Time', fontweight='bold', fontsize=18)
         plt.ylabel('Net Wealth', fontweight='bold', fontsize=18)
         plt.legend(title='Agent Purpose Category')
         plt.savefig(save_figures_path + fname + ".png")
@@ -189,11 +189,11 @@ class SimulationAnalysis:
             # plt.subplot(4, 2, i)
             type_data = token_price_time_series[token_price_time_series['LifeCycleCurveShape'] == type]
             token_ids = type_data["TokenID"].unique()
-            type_data = type_data[type_data["TokenID"] == random.choices(token_ids)[0]]
+            type_data = type_data[type_data["TokenID"] == min(token_ids)]
             sns.lineplot(x='TransactionID', y='TokenCurrentBuyPrice', label=type, data=type_data)
 
         plt.title(f'Token Price Time Series {title}', weight='bold', fontsize=22)
-        plt.xlabel('Time (weeks)', fontweight='bold', fontsize=18)
+        plt.xlabel('Time', fontweight='bold', fontsize=18)
         plt.ylabel('Token Current Price', fontweight='bold', fontsize=18)
         plt.legend(title='Life Cycle Curve Shape')
         plt.savefig(save_figures_path + fname + ".png")

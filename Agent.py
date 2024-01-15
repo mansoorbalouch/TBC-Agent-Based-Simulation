@@ -68,37 +68,37 @@ class Agent:
             self.dayOfPassing = int(DoB + abs(np.random.normal(self.creator_mu_DayOfPassing, self.creator_sigma_DayOfPassing)))
         elif self.purposeCategory == "Investor":
             if randNumber <= .9:
-                self.strategyType = "fundy"
+                self.strategyType = "f" # fundy
             elif randNumber <= .98:
-                self.strategyType = "charty"
+                self.strategyType = "c" # charty
             else:
-                self.strategyType = "noisy"
+                self.strategyType = "n" # noisy
             self.liquidity = np.random.normal(self.rich_mu_liquidity, self.rich_sigma_liquidity)
             self.netClosingWealthCurrentTerm = self.liquidity 
             self.dayOfPassing = int(abs(DoB + np.random.normal(self.rich_mu_DayOfPassing, self.rich_sigma_DayOfPassing)))
         elif self.purposeCategory == "Utilizer":
             if randNumber <= .9:
-                self.strategyType = "charty"
+                self.strategyType = "c" # charty
             elif randNumber <= .98:
-                self.strategyType = "fundy"
+                self.strategyType = "f" # fundy
             else:
-                self.strategyType = "noisy"
+                self.strategyType = "n" # noisy
             self.liquidity = np.random.normal(self.midClass_mu_liquidity, self.midClass_sigma_liquidity)
             self.netClosingWealthCurrentTerm = self.liquidity 
             self.dayOfPassing = int(abs(DoB + np.random.normal(self.midClass_mu_DayOfPassing, self.midClass_sigma_DayOfPassing)))
         else:  # Speculator
             if randNumber <= .8:
-                self.strategyType = "noisy"
+                self.strategyType = "n" # noisy
             elif randNumber <= .98:
-                self.strategyType = "charty"
+                self.strategyType = "c" # charty
             else:
-                self.strategyType = "fundy"
+                self.strategyType = "f" # fundy
             self.liquidity = np.random.normal(self.poor_mu_liquidity, self.poor_sigma_liquidity)
             self.netClosingWealthCurrentTerm = self.liquidity 
             self.dayOfPassing = int(abs(DoB + np.random.normal(self.poor_mu_DayOfPassing, self.poor_sigma_DayOfPassing)))
 
         # Set strategies and other parameters
-        if self.strategyType == "fundy":
+        if self.strategyType == "f":
             self.riskAppetite = np.random.normal(self.risk_mu_fundy, self.risk_sigma_fundy)
             self.riskAppetite = max(0.0001, min(self.riskAppetite, 0.9999))
             self.proActiveness = np.random.normal(self.activity_mu_fundy, self.activity_sigma_fundy)
@@ -112,7 +112,7 @@ class Agent:
             terms = np.arange(1, self.numTermsForeseen_Fundy + 1)
             self.weights4ExpPricePerTerm_Fundy = 1 / terms
             self.weights4ExpPricePerTerm_Fundy /= self.weights4ExpPricePerTerm_Fundy.sum()
-        elif self.strategyType == "charty":
+        elif self.strategyType == "c":
             self.riskAppetite = np.random.normal(self.risk_mu_charty, self.risk_sigma_charty)
             self.riskAppetite = max(0.0001, min(self.riskAppetite, 0.9999))
             self.proActiveness = np.random.normal(self.activity_mu_charty, self.activity_sigma_charty)
@@ -125,7 +125,7 @@ class Agent:
             terms = np.arange(1, self.numHindsightTerms_Charty + 1)
             self.weights4MvngAvgPerTerm_Charty = 1 / terms
             self.weights4MvngAvgPerTerm_Charty /= self.weights4MvngAvgPerTerm_Charty.sum()
-        elif self.strategyType == "noisy":
+        elif self.strategyType == "n":
             self.riskAppetite = np.random.normal(self.risk_mu_noisy, self.risk_sigma_noisy)
             self.riskAppetite = max(0.0001, min(self.riskAppetite, 0.9999))
             self.proActiveness = np.random.normal(self.activity_mu_noisy, self.activity_sigma_noisy)

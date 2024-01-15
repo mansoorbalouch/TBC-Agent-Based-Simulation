@@ -37,8 +37,8 @@ class Platform:
         self.run_simulation()
         stop = timeit.default_timer()
         time_new = stop - start
-        print(f"Simulation time elapsed : ", time_new)
-        print(f"{self.bonding_curve_obj.functionType} bonding curve simulation completed for {self.numAgents} agents. Parameters: m={self.bonding_curve_obj.param1}, c = {self.bonding_curve_obj.param2}, n={self.bonding_curve_obj.param3}")
+        print(f"Time elapsed : {time_new}. {self.bonding_curve_obj.functionType.capitalize()} TBC simulation completed for {self.numAgents} 
+              agents. Parameters: m/c={self.bonding_curve_obj.param1}, c/a = {self.bonding_curve_obj.param2}, n/b={self.bonding_curve_obj.param3}")
  
 
     def create_agents_and_tokens(self, bonding_curve_obj):
@@ -94,7 +94,7 @@ class Platform:
 
 
     def run_simulation(self):
-        numSimulationStepsPerTerm = 7*24*60*60 # seconds per week/term
+        numSimulationStepsPerTerm = 7*24*60 *60 # seconds per week/term
         transactionsLogFileID = open(f'Results/{self.new_dir}/Transactions_log_{self.bonding_curve_obj.functionType}_{self.numAgents}Agents_{self.numSimulationTerms}Terms.txt', 'w')
         transactionsLogFileID.write('%s %s %s %s %s %s %s %s %s %s\n' % ('TransactionID', 'AgentID', 'AgentLiquidity', 'TransactionType', 'DeltaSupply', 'TokenID', 'TokenCurrentBuyPrice', 'TokenCurrentSellPrice', 'TokenCurrentSupply', 'SimulationTerm'))
 
@@ -118,136 +118,124 @@ class Platform:
                 # print("No alive token or agent, skip this transaction step!!")
                 continue 
 
-            # compute the expected prices of all tokens for alive fundy agents
-            for fundyAgent in list(aliveAgents_dict.keys()):
-                if self.myAgents[fundyAgent].strategyType == "fundy":
-                        self.myAgents[fundyAgent].currentTermAllTokensExpectedPrices_Fundy = [0]*len(aliveTokensIDs)
-                        # Compute the expected prices of all tokens
-                        for j, tokenID in enumerate(aliveTokensIDs):
-                            # exp price = w_i * fp_i * (1 +- N(IG, 0.02))
-                            exp_price = sum(w * fp * (1 + (random.choices([1,-1])[0] * np.random.normal(self.myAgents[fundyAgent].intelligenceGap, 0.02))) for w, fp in zip(
-                                self.myAgents[fundyAgent].weights4ExpPricePerTerm_Fundy[:self.myAgents[fundyAgent].numTermsForeseen_Fundy],
-                                self.myTokens[tokenID].fairPricesPerTerm_3periods[simulationTerm-self.myTokens[tokenID].dayOfBirth :self.myAgents[fundyAgent].numTermsForeseen_Fundy]))
-                            self.myAgents[fundyAgent].currentTermAllTokensExpectedPrices_Fundy[j]= round(exp_price, 2)
-                        # print("Tokens expected prices (fundy) ", fundyAgent.currentTermAllTokensExpectedPrices_Fundy)
+            # compute the expected prices of all tokens for alive fundy and charty agents
+            for thisAgent in list(aliveAgents_dict.keys()):
+                if self.myAgents[thisAgent].strategyType == "f":
+                    self.myAgents[thisAgent].currentTermAllTokensExpectedPrices_Fundy = [0]*len(aliveTokensIDs)
+                    # Compute the expected prices of all tokens
+                    for j, tokenID in enumerate(aliveTokensIDs):
+                        # exp price = w_i * fp_i * (1 +- N(IG, 0.02))
+                        exp_price = sum(w * fp * (1 + (random.choices([1,-1])[0] * np.random.normal(self.myAgents[thisAgent].intelligenceGap, 0.02))) for w, fp in zip(
+                            self.myAgents[thisAgent].weights4ExpPricePerTerm_Fundy[:self.myAgents[thisAgent].numTermsForeseen_Fundy],
+                            self.myTokens[tokenID].fairPricesPerTerm_3periods[simulationTerm-self.myTokens[tokenID].dayOfBirth :self.myAgents[thisAgent].numTermsForeseen_Fundy]))
+                        self.myAgents[thisAgent].currentTermAllTokensExpectedPrices_Fundy[j]= round(exp_price, 2)
+                    # print("Tokens expected prices (fundy) ", thisAgent.currentTermAllTokensExpectedPrices_Fundy)
+                elif self.myAgents[thisAgent].strategyType == "c":
+                    self.myAgents[thisAgent].currentTermAllTokensExpectedPrices_Charty = [0]*len(aliveTokensIDs)
+                    # Compute the expected prices of all tokens
+                    for i, tokenID in enumerate(aliveTokensIDs):
+                        hindsightWeights = self.myAgents[thisAgent].weights4MvngAvgPerTerm_Charty.reverse() # reverse the order of weights for charty  
+                        averagePricesPerTerm = self.myTokens[tokenID].pastAveragePricesPerTerm_3periods[simulationTerm-self.myTokens[tokenID].dayOfBirth :self.myAgents[thisAgent].numHindsightTerms_Charty]
+                        weightedPricesPerTerm = sum([w * p for w, p in zip(hindsightWeights, averagePricesPerTerm)])
+                        # expected_price = (self.myTokens[tokenID].currentBuyPrice + weightedPricesPerTerm) / 2
+                        self.myAgents[thisAgent].currentTermAllTokensExpectedPrices_Charty[i] = weightedPricesPerTerm
+                    # print("Tokens expected prices (charty) ", allTokensExpectedPrices)
 
             for step in range(numSimulationStepsPerTerm):
                 keys = list(aliveAgents_dict.keys())
-                weights = [aliveAgents_dict[a] for a in keys]
+                weights = list(aliveAgents_dict.values())
                 transactingAgentID = random.choices(keys, weights=weights)[0]
                 transactingAgent = self.myAgents[transactingAgentID]
-                # print(transactingAgent)
                 action = ""
-                transactingTokenID = None
+                # transactingTokenID = None
                 transactingAgentHoldings = len(transactingAgent.tokenHoldings)
 
-                if (transactingAgentHoldings > 0 or transactingAgent.liquidity > 0):
+                if (transactingAgentHoldings > 0) or (transactingAgent.liquidity > 0):
 
-                    if transactingAgent.strategyType == "noisy":
+                    if transactingAgent.strategyType == "n": # noisy
                         if (transactingAgent.liquidity > 0) and (transactingAgentHoldings > 0):
-                            action = random.choice(["buy", "sell"])
-                            if action == "buy":
+                            action = random.choice(["b", "s"]) # buy, sell
+                            if action == "b": # buy
                                 transactingTokenID = random.choice([tokenID for tokenID in aliveTokensIDs])
-                            elif action == "sell":
-                                if transactingAgentHoldings == 1:
-                                    transactingTokenID = next(iter(transactingAgent.tokenHoldings))
-                                else:
-                                    transactingTokenID = random.choice(list(transactingAgent.tokenHoldings.keys()))
-                        elif (transactingAgent.liquidity <= 0) and (transactingAgentHoldings > 0):
-                            if transactingAgentHoldings == 1:
-                                transactingTokenID = next(iter(transactingAgent.tokenHoldings))
-                            else:
+                            elif action == "s": # sell
                                 transactingTokenID = random.choice(list(transactingAgent.tokenHoldings.keys()))
-                            action = "sell"
+                        elif (transactingAgent.liquidity <= 0) and (transactingAgentHoldings > 0):
+                            transactingTokenID = random.choice(list(transactingAgent.tokenHoldings.keys()))
+                            action = "s"
                         elif (transactingAgent.liquidity > 0) and (transactingAgentHoldings == 0):
-                            transactingTokenID = random.choice([tokenID for tokenID in aliveTokensIDs])
-                            action = "buy"
+                            transactingTokenID = random.choice(aliveTokensIDs)
+                            action = "b"
 
-                    elif transactingAgent.strategyType == "fundy":
+                    elif transactingAgent.strategyType == "f": # fundy
 
                         # Calculate the price gaps
                         tokensPriceGaps = [exp_price - self.myTokens[tokenID].currentBuyPrice for exp_price, tokenID in zip(transactingAgent.currentTermAllTokensExpectedPrices_Fundy, aliveTokensIDs )]
-                        maxPriceGap_AllTokens = max(tokensPriceGaps) if tokensPriceGaps else float('-inf')
+                        maxPriceGap_AllTokens = max(tokensPriceGaps) # if tokensPriceGaps else float('-inf')
 
                         if transactingAgentHoldings > 0:
                             # Get the price gaps of the already held tokens
                             tokensPriceGaps_HeldTokens = [tokensPriceGaps[tokenID] for tokenID in list(transactingAgent.tokenHoldings.keys())]
                             # Find minimum and maximum price gaps
-                            minPriceGap_HeldTokens = min(tokensPriceGaps_HeldTokens) if tokensPriceGaps_HeldTokens else float('inf')
+                            minPriceGap_HeldTokens = min(tokensPriceGaps_HeldTokens) # if tokensPriceGaps_HeldTokens else float('inf')
 
                         # Decide to buy or sell based on the price gaps
-                        if transactingAgentHoldings > 0 and transactingAgent.liquidity > 0:
+                        if (transactingAgent.liquidity > 0) and (transactingAgentHoldings > 0):
                             if maxPriceGap_AllTokens > 0:
                                 if maxPriceGap_AllTokens > abs(minPriceGap_HeldTokens):
                                     transactingTokenID = tokensPriceGaps.index(maxPriceGap_AllTokens)
-                                    action = "buy"
+                                    action = "b" # buy
                                 else:
                                     transactingTokenID = tokensPriceGaps.index(minPriceGap_HeldTokens)
-                                    action = "sell"
-                        elif transactingAgent.liquidity <= 0 and transactingAgentHoldings > 0:
+                                    action = "s" # sell
+                        elif (transactingAgent.liquidity <= 0) and (transactingAgentHoldings > 0):
                             transactingTokenID = tokensPriceGaps.index(minPriceGap_HeldTokens)
-                            action = "sell"
-                        elif transactingAgent.liquidity > 0 and transactingAgentHoldings == 0:
+                            action = "s" # sell
+                        elif (transactingAgent.liquidity > 0) and (transactingAgentHoldings == 0):
                             if maxPriceGap_AllTokens > 0:
                                 transactingTokenID = tokensPriceGaps.index(maxPriceGap_AllTokens)
-                                action = "buy"
-                    elif transactingAgent.strategyType == "charty":
-                        transactingAgent.currentTermAllTokensExpectedPrices_Charty = [None]*len(aliveTokensIDs)
-                        # Compute the expected prices of all tokens
-                        for i, tokenID in enumerate(aliveTokensIDs):
-                            hindsightWeights = transactingAgent.weights4MvngAvgPerTerm_Charty
-                            averagePricesPerTerm = self.myTokens[tokenID].pastAveragePricesPerTerm_3periods[simulationTerm-self.myTokens[tokenID].dayOfBirth :transactingAgent.numHindsightTerms_Charty]
-                            weightedPricesPerTerm = sum([w * p for w, p in zip(hindsightWeights, averagePricesPerTerm)])
-                            expected_price = (self.myTokens[tokenID].currentBuyPrice + weightedPricesPerTerm) / 2
-                            transactingAgent.currentTermAllTokensExpectedPrices_Charty[i] = expected_price
-                        # print("Tokens expected prices (charty) ", allTokensExpectedPrices)
+                                action = "b" # buy
+                    elif transactingAgent.strategyType == "c": # charty
 
                         # Calculate the price gaps
                         tokensPriceGaps = [exp_price - self.myTokens[tokenID].currentBuyPrice for exp_price, tokenID in zip(transactingAgent.currentTermAllTokensExpectedPrices_Charty, aliveTokensIDs)]
 
-                        maxPriceGap_AllTokens = max(tokensPriceGaps) if tokensPriceGaps else float('-inf')
+                        maxPriceGap_AllTokens = max(tokensPriceGaps) # if tokensPriceGaps else float('-inf')
 
                         if transactingAgentHoldings > 0:
                             # Get the price gaps of the already held tokens
                             tokensPriceGaps_HeldTokens = [tokensPriceGaps[tokenID] for tokenID in list(transactingAgent.tokenHoldings.keys())]
 
                             # Find minimum and maximum price gaps
-                            minPriceGap_HeldTokens = min(tokensPriceGaps_HeldTokens) if tokensPriceGaps_HeldTokens else float('inf')
+                            minPriceGap_HeldTokens = min(tokensPriceGaps_HeldTokens) # if tokensPriceGaps_HeldTokens else float('inf')
 
                         # Decide to buy or sell based on the price gaps
-                        if transactingAgentHoldings > 0 and transactingAgent.liquidity > 0:
+                        if (transactingAgentHoldings > 0) and (transactingAgent.liquidity > 0):
                             if maxPriceGap_AllTokens > 0:
                                 if maxPriceGap_AllTokens > abs(minPriceGap_HeldTokens):
                                     transactingTokenID = tokensPriceGaps.index(maxPriceGap_AllTokens)
-                                    action = "buy"
+                                    action = "b" # buy
                                 else:
                                     transactingTokenID = tokensPriceGaps.index(minPriceGap_HeldTokens)
-                                    action = "sell"
-                        elif transactingAgent.liquidity <= 0 and transactingAgentHoldings > 0:
+                                    action = "s" # sell
+                        elif (transactingAgent.liquidity <= 0) and (transactingAgentHoldings > 0):
                             transactingTokenID = tokensPriceGaps.index(minPriceGap_HeldTokens)
-                            action = "sell"
-                        elif transactingAgent.liquidity > 0 and transactingAgentHoldings == 0:
+                            action = "s" # sell
+                        elif (transactingAgent.liquidity > 0) and (transactingAgentHoldings == 0):
                             if maxPriceGap_AllTokens > 0:
                                 transactingTokenID = tokensPriceGaps.index(maxPriceGap_AllTokens)
-                                action = "buy"
+                                action = "b" # buy
                    # print(self.myTokens[0])
                                 
-                if action == "buy":
+                if action == "b": # buy
                     # Choose how much (deltaSupply) to buy based on liquidity or token holdings and risk averseness
-                    deltaSupply = random.random()
-                    # print("Buying token ID: ", transactingTokenID)
+                    deltaSupplyMax = self.bonding_curve_obj.deltaSupply(self.myTokens[transactingTokenID].currentSupply, 
+                                                                    self.bonding_curve_obj.param1, self.bonding_curve_obj.param2, self.myAgents[transactingAgentID].liquidity, self.bonding_curve_obj.param3)
+                    deltaSupply =  deltaSupplyMax * self.myAgents[transactingAgentID].riskAppetite # random.random()  # random.randint(1, int(deltaSupplyMax))
+
                     costDeltaSupply = self.bonding_curve_obj.costDeltaSupply(self.myTokens[transactingTokenID].currentSupply, 
                                                                     self.bonding_curve_obj.param1, self.bonding_curve_obj.param2, deltaSupply, self.bonding_curve_obj.param3)
 
-                    # Check if the cost is within the available liquidity
-                    while costDeltaSupply > transactingAgent.liquidity:
-                        deltaSupply /= 2
-                        costDeltaSupply = self.bonding_curve_obj.costDeltaSupply(self.myTokens[transactingTokenID].currentSupply, 
-                                                                        self.bonding_curve_obj.param1, self.bonding_curve_obj.param2, deltaSupply, self.bonding_curve_obj.param3)
-                        # print("cost delta supply computing...")
-
                     # Update the transacting token records
-                    # token = self.myTokens[transactingTokenID]
                     self.myTokens[transactingTokenID].currentSupply += deltaSupply
                     self.myTokens[transactingTokenID].currentBuyPrice = self.bonding_curve_obj.buyFunction(self.myTokens[transactingTokenID].currentSupply, self.bonding_curve_obj.param1, self.bonding_curve_obj.param2, self.bonding_curve_obj.param3)
                     self.myTokens[transactingTokenID].currentSellPrice = self.bonding_curve_obj.sellFunction(self.myTokens[transactingTokenID].currentSupply, self.bonding_curve_obj.param1, self.bonding_curve_obj.param2, self.bonding_curve_obj.param3)
@@ -273,23 +261,14 @@ class Platform:
                                 f"{self.myTokens[transactingTokenID].currentBuyPrice} {self.myTokens[transactingTokenID].currentSellPrice} {self.myTokens[transactingTokenID].currentSupply} {simulationTerm}\n")
                     transactionID +=1
 
-                elif action == "sell":
-                    # print("Selling token ID: ", transactingTokenID)
+                elif action == "s": # sell
                     currentHoldingsTransactingToken = self.myAgents[transactingAgentID].tokenHoldings[transactingTokenID] # get the current supply of the held token to be selled
-                    deltaSupply = random.random()
-                    # print("Token ID: ", transactingTokenID)
-                    # print(len(self.myTokens))
-
-                    # Check if the cost is within the available liquidity
-                    while deltaSupply > currentHoldingsTransactingToken:
-                        deltaSupply /= 2
-                        # print("delta supply computing...")
-                    
+                    deltaSupply = currentHoldingsTransactingToken * self.myAgents[transactingAgentID].riskAppetite # random.random()
+                
                     costDeltaSupply = self.bonding_curve_obj.costDeltaSupply(self.myTokens[transactingTokenID].currentSupply, 
                                                                         self.bonding_curve_obj.param1, self.bonding_curve_obj.param2, deltaSupply, self.bonding_curve_obj.param3)
 
                     # Update the transacting token records
-                    # token = self.myTokens[transactingTokenID]
                     self.myTokens[transactingTokenID].currentSupply -= deltaSupply
                     self.myTokens[transactingTokenID].currentBuyPrice = self.bonding_curve_obj.buyFunction(self.myTokens[transactingTokenID].currentSupply, self.bonding_curve_obj.param1, self.bonding_curve_obj.param2, self.bonding_curve_obj.param3)
                     self.myTokens[transactingTokenID].currentSellPrice = self.bonding_curve_obj.sellFunction(self.myTokens[transactingTokenID].currentSupply, self.bonding_curve_obj.param1, self.bonding_curve_obj.param2, self.bonding_curve_obj.param3)
